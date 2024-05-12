@@ -1,0 +1,73 @@
+@import "../../../pages/styleConst.scss";
+
+.tourInfo {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  z-index: 1001;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  background-color: var(--background-color);
+}
+
+.gygTourInfoRatingStars {
+  display: flex;
+  align-items: center;
+  padding-top: 0.3125rem;
+
+  .gygTourInfoReviews {
+    font-weight: 500;
+    margin-left: 0.625rem;
+    font-size: 0.75rem;
+  }
+
+  .gygTourInfoOverralRating {
+    display: block;
+    margin-left: 0.625rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.375rem;
+  }
+}
+
+.gygTourInfoBack {
+  margin-bottom: 1rem;
+}
+
+.gygTourInfoDescription {
+  font-size: 1rem;
+
+  input[type="checkbox"] {
+    display: none;
+  }
+  .gygTourInfoDescContent {
+    cursor: pointer;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+  }
+  .gygTourInfoDescToggle:checked + .gygTourInfoDescContent {
+    display: block;
+  }
+}
+
+.gygTourDetailsLoader {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%);
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .tourInfo {
+    background-color: var(--background-color);
+    padding: 1rem 1.5rem;
+  }
+  .gygTourDetailsLoader {
+    position: absolute;
+    left: 20rem;
+    transform: translate(-50%);
+  }
+}

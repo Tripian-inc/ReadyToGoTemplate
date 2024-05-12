@@ -1,0 +1,11 @@
+@import "../../pages/styleConst.scss";
+
+.comfirmModal {
+  min-width: 90% !important;
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .comfirmModal {
+    min-width: 40% !important;
+  }
+}

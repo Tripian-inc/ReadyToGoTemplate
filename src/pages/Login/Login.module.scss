@@ -1,0 +1,49 @@
+.loginPage {
+  background: var(--background-color);
+
+  .login-content > div:nth-child(2) {
+    margin-top: 4rem;
+  }
+
+  .loginAppLogoContent {
+    display: flex;
+    padding: 1rem;
+    align-items: center;
+    border-top-right-radius: 0.4rem;
+    border-top-left-radius: 0.4rem;
+    box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.3);
+
+    .loginAppLogo {
+      height: 3rem;
+    }
+  }
+
+  .loginAppBackground {
+    position: fixed;
+    bottom: 1rem;
+    right: 0;
+  }
+
+  .loginPoweredBy {
+    display: flex;
+    align-items: center;
+    color: #7c7576;
+    font-size: 0.75rem;
+    justify-content: center;
+    // padding-top: 1rem;
+    position: fixed;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+    bottom: 0rem;
+    height: 2.5rem;
+    user-select: none;
+    text-decoration: none;
+    background-color: #fff;
+
+    img {
+      width: 4rem;
+      margin-left: 0.125rem;
+    }
+  }
+}

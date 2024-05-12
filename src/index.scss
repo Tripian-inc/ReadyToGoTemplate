@@ -1,0 +1,75 @@
+*,
+:after,
+:before {
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  line-height: 1rem;
+  top: 0 !important;
+}
+
+body {
+  /* overflow: hidden; */
+  /* -ms-touch-action: none;
+  touch-action: none; */
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  /* -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale; */
+  /* -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none; */
+}
+
+body {
+  padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 20px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 20px);
+}
+
+.root {
+  /* overflow: hidden; */
+  /* position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0; */
+  height: 100%;
+  width: 100%;
+
+  // background: #f5f5f5;
+  margin: 0;
+  padding: 0;
+
+  color: var(--text-primary-color);
+  background-color: var(--background-color);
+
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+/* .body { */
+/* Sending body at the bottom of the stack */
+/*   z-index: 1;
+} */
+
+/* .root { */
+/* Making the wrapper stack above the body */
+/*   z-index: 2;
+} */
+
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@import "./scrollable.css";
+@import "./styles/fonts.scss";
+
+/* .gm-ui-hover-effect {
+  display: none !important;
+} */

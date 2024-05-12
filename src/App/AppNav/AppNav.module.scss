@@ -1,0 +1,119 @@
+@import "../../pages/styleConst.scss";
+
+.fixed {
+  position: fixed !important;
+}
+
+.bshadow {
+  box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.3);
+}
+.borderBottomLight {
+  border-bottom: 1px solid rgb(0 0 0 / 10%);
+}
+
+.header {
+  position: relative;
+  left: 0;
+  top: 0;
+  z-index: 1500;
+  width: 100%;
+  background-color: var(--header-color);
+  color: var(--header-text-color);
+
+  .hcontainer {
+    height: $mobile-navbar-height;
+    background-color: var(--header-color);
+    padding: 4px;
+    position: relative;
+
+    .barsIcon {
+      svg {
+        fill: var(--header-text-color) !important;
+      }
+    }
+
+    .logo {
+      height: 50%;
+      cursor: pointer;
+      position: absolute;
+      left: 3rem;
+    }
+
+    .logoAppDark {
+      background-image: var(--app-logo-dark);
+      background-repeat: no-repeat;
+      background-position: left;
+      background-size: contain;
+      height: 100%;
+      width: 10rem;
+      display: block !important;
+    }
+
+    .logoAppLight {
+      background-image: var(--app-logo-light);
+      background-repeat: no-repeat;
+      background-position: left;
+      background-size: contain;
+      height: 100%;
+      width: 10rem;
+      display: block !important;
+    }
+
+    & > * {
+      /* position: absolute; */
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    & > button {
+      padding: 1rem 0.5rem 1rem !important;
+    }
+
+    .appnavPageTitle {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      letter-spacing: 0.01px;
+      font-size: 0.875rem;
+    }
+
+    .appNavIconImageContainer {
+      float: right;
+      margin: 1.5rem 0.75rem 0;
+      cursor: pointer;
+      display: flex;
+    }
+  }
+}
+
+.headerFake {
+  box-shadow: none !important;
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .header {
+    .hcontainer {
+      height: $desktop-navbar-height;
+      padding: 4px;
+      background-color: var(--header-color);
+
+      .logo {
+        height: 65%;
+        cursor: pointer;
+        position: absolute;
+        left: 4rem;
+      }
+
+      .appnavPageTitle {
+        font-size: 1rem;
+      }
+
+      .appNavIconImageContainer {
+        margin: 2.5rem 0.75rem 0;
+      }
+    }
+  }
+}

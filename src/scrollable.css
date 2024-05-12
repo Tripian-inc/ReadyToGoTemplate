@@ -1,0 +1,39 @@
+.scrollable-x {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.scrollable-y {
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+@media (hover: hover) {
+  .scrollable-x,
+  .scrollable-y {
+    outline-offset: -2px;
+    scrollbar-width: thin;
+    /* overflow-x: hidden;
+    overflow-y: hidden; */
+  }
+  /* .scrollable-x:focus,
+  .scrollable-x:hover {
+    overflow-x: auto;
+  }
+  .scrollable-y:focus,
+  .scrollable-y:hover {
+    overflow-y: auto;
+  } */
+
+  .scrollable-x::-webkit-scrollbar,
+  .scrollable-y::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollable-x::-webkit-scrollbar-thumb,
+  .scrollable-y::-webkit-scrollbar-thumb {
+    background-color: #9c9c9c;
+  }
+  .scrollable-x::-webkit-scrollbar-track,
+  .scrollable-y::-webkit-scrollbar-track {
+    background-color: #f0f0f0;
+  }
+}

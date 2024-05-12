@@ -1,0 +1,73 @@
+@import "../../../../styleConst.scss";
+
+.myOffersContainer {
+  // .container-height
+  // height: calc(100% - #{$mobile-navbar-height} - #{$trip-tab-menu});
+  z-index: 3;
+  width: 100%;
+  background-color: var(--background-color);
+  color: var(--text-primary-color);
+  position: fixed;
+  bottom: 0px;
+  left: 0;
+  transition: height #{$list-transition};
+
+  &.myOffersContainerClose {
+    height: 0;
+  }
+
+  &.backgroundImage {
+    background-color: #0d31ab;
+    background-image: url("../../../../../assets/img/bob-white.png");
+    background-repeat: no-repeat;
+    background-position: right bottom;
+  }
+
+  .myOffersCloseIcon {
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    position: absolute;
+    top: 0px;
+    right: 0;
+    svg {
+      fill: var(--text-primary-color) !important;
+    }
+  }
+
+  .offerCardsContent {
+    margin-top: 1.25rem;
+  }
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .myOffersContainer {
+    // .container-height
+    // height: calc(100% - #{$desktop-navbar-height} - #{$trip-tab-menu});
+    width: 0;
+    bottom: 0;
+    transition: width #{$list-transition};
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+
+    &.myOffersContainerOpen {
+      width: $desktop-list-width;
+      /* min-width: 408px; */
+    }
+
+    &.myOffersContainerClose {
+      width: 0;
+    }
+
+    &.backgroundImage {
+      background-color: #fff;
+      background-image: url("../../../../../assets/img/bob-blue.png");
+      background-repeat: no-repeat;
+      background-position: right bottom;
+      background-size: 200px;
+    }
+  }
+
+  .offerCardsContent {
+    padding: 0 1rem;
+  }
+}

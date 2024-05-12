@@ -1,0 +1,46 @@
+@import "../../../styleConst.scss";
+
+.mapContainer {
+  // .container-height
+  // height: calc(100% - #{$mobile-navbar-height} - #{$trip-tab-menu});
+  z-index: 0;
+  position: absolute;
+  // bottom: 0;
+  bottom: env(safe-area-inset-bottom, 11px);
+  width: 100%;
+  overflow: hidden;
+
+  .mapLeftTopContainer {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    display: flex;
+    flex-direction: column;
+
+    // .map-buttons {
+    //   margin-bottom: 0.5rem;
+    // }
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  .mapContainer {
+    .mapLeftTopContainer {
+      top: 2.5rem;
+    }
+  }
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .mapContainer {
+    // .container-height
+    // height: calc(100% - #{$desktop-navbar-height} - #{$trip-tab-menu});
+    width: calc(100% - #{$desktop-list-width});
+    right: 0;
+    transition: width #{$list-transition};
+  }
+
+  .wm100 {
+    width: 100%;
+  }
+}

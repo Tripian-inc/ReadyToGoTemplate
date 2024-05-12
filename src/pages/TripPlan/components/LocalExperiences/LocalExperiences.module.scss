@@ -1,0 +1,28 @@
+@import "../../../styleConst.scss";
+
+/* .local-experiences-modal {
+  .local-experiences-category {
+    .local-experiences-category-header {
+    }
+  }
+} */
+.noDataText {
+  text-align: center;
+}
+
+.modalCloseIcon {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 2px #000);
+  bottom: 1% !important;
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .localExperiencesCategory {
+    padding: 0 2rem 0 2rem;
+  }
+}

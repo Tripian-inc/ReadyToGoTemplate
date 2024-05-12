@@ -1,0 +1,16 @@
+@import '../../pages/styleConst.scss';
+
+.get-your-guide-px {
+  overflow: hidden;
+}
+
+.get-your-guide-modal-loading {
+  height: 25vh;
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .get-your-guide-px {
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+  }
+}

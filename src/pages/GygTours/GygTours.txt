@@ -1,0 +1,142 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Providers } from '@tripian/model';
+import { providers } from '@tripian/core';
+import { Modal, PreLoading, GygTourInfo, GygTourCard, CardSlider } from '@tripian/react';
+import { useParams } from 'react-router';
+import { useSelector, useDispatch } from 'react-redux';
+import { changeHash, fetchTrip, saveError } from '../../redux/action/trip';
+import { GYGTOURS } from '../../constants/ROUTER_PATH_TITLE';
+import ICombinedState from '../../redux/model/ICombinedState';
+// import tourData from './tour';
+import './GygTours.scss';
+
+const GygToursPage = () => {
+  const { tripData } = useSelector((state: ICombinedState) => ({
+    tripData: state.trip.data,
+  }));
+  const [loading, setLoading] = useState(true);
+  const [toursCatalog, setToursCatalog] = useState<Providers.Gyg.CatalogGroup[]>();
+  const [tourInfoModalState, setTourInfoModalState] = useState<{ show: boolean; tour?: Providers.Gyg.Tour; loading: boolean }>({
+    show: false,
+    loading: false,
+  });
+
+  document.title = GYGTOURS.TITLE();
+  const dispatch = useDispatch();
+  const { hash } = useParams<{ hash: string }>();
+
+  useEffect(() => {
+    if (tripData === undefined) {
+      dispatch(changeHash(hash));
+      dispatch(fetchTrip(hash, 0));
+    }
+  }, [dispatch, hash, tripData]);
+
+  useEffect(() => {
+    let unmounted = false;
+    if (!unmounted) {
+      if (tripData?.city.name) {
+        providers.gyg?.tours(tripData?.city.name /* , tripData?.city.coordinate, 10 */).then((tours: Providers.Gyg.CatalogGroup[]) => {
+          if (tours.length > 0) {
+            setToursCatalog(tours);
+          }
+          setLoading(false);
+        });
+        // .catch((gygFetchToursError) => {
+        //   dispatch(saveError('gygFetchToursError', 'Get Your Guide Fetch Tours', gygFetchToursError));
+        // });
+      }
+    }
+    return () => {
+      unmounted = true;
+    };
+  }, [dispatch, tripData]);
+
+  const memoizedGetTourInfo = useCallback(
+    (tourId: number) => {
+      setTourInfoModalState({ show: true, loading: true });
+      providers.gyg
+        ?.tour(tourId)
+        .then((tour: Providers.Gyg.Tour) => {
+          setTourInfoModalState((prevState) => ({
+            ...prevState,
+            tour,
+            loading: false,
+          }));
+          // console.log('tour', tour);
+        })
+        .catch((gygFetchTourError) => {
+          dispatch(saveError('gygFetchTourError', 'Get Your Guide Fetch Tour', gygFetchTourError));
+        });
+    },
+    [dispatch],
+  );
+
+  // const memoizedGetTourInfo = useCallback((tourId: number) => {
+  //   console.log(tourId);
+  //   setTourInfoModalState({ show: true, tour: tourData, loading: false });
+  // }, []);
+
+  const closeModal = () => {
+    setTourInfoModalState({ show: false, loading: false });
+  };
+
+  const gygTourModal = useMemo(
+    () => (
+      <Modal show={tourInfoModalState.show} className="top-ten-modal" backdropClick={closeModal}>
+        {!tourInfoModalState.loading && tourInfoModalState.tour ? (
+          <GygTourInfo tour={tourInfoModalState.tour} close={closeModal} />
+        ) : (
+          <div className="get-your-guide-modal-loading">
+            <PreLoading bgColor="rgba(238, 238, 238, 0.8)" />
+          </div>
+        )}
+      </Modal>
+    ),
+    [tourInfoModalState],
+  );
+
+  const gygLocalTours = useMemo(
+    () => (
+      <>
+        {toursCatalog?.map((tourCatalog: Providers.Gyg.CatalogGroup) => {
+          return (
+            <div key={tourCatalog.title}>
+              <h1 className="travel-guide-section mt12 ml12 pl2">{tourCatalog.title}</h1>
+              <div className="my5 travel-guide-px">
+                <CardSlider>
+                  {tourCatalog.items.map((tour: Providers.Gyg.Tour, index) => {
+                    return (
+                      <div key={tour.tour_id} onKeyPress={() => {}} role="button" tabIndex={index}>
+                        <GygTourCard
+                          tour={tour}
+                          bodyClicked={(tourr: Providers.Gyg.Tour) => {
+                            memoizedGetTourInfo(tourr.tour_id);
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </CardSlider>
+              </div>
+            </div>
+          );
+        })}
+      </>
+    ),
+    [toursCatalog, memoizedGetTourInfo],
+  );
+
+  if (loading) {
+    return <PreLoading />;
+  }
+
+  return (
+    <>
+      {gygLocalTours}
+      {gygTourModal}
+    </>
+  );
+};
+
+export default GygToursPage;

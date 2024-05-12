@@ -1,0 +1,66 @@
+@import "../../../../styleConst.scss";
+
+.focusContainer {
+  // .container-height
+  // height: calc(100% - #{$mobile-navbar-height} - #{$trip-tab-menu});
+  z-index: 4;
+  width: 100%;
+  background-color: #fff;
+  position: fixed;
+  bottom: 0px;
+  left: 0;
+  transition: height #{$list-transition};
+
+  &.focusContainerClose {
+    height: 0;
+  }
+}
+
+.bookingModal {
+  min-height: 30rem !important;
+  min-width: 90% !important;
+}
+
+.bookingModalCloseIcon {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 2px #000);
+}
+
+.focusContainerLoading {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .focusContainer {
+    // .container-height
+    // height: calc(100% - #{$desktop-navbar-height} - #{$trip-tab-menu});
+    width: 0;
+    background-color: #fff;
+    bottom: 0;
+    transition: width #{$list-transition};
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+
+    &.focusContainerOpen {
+      width: $desktop-list-width;
+      /* min-width: 408px; */
+    }
+
+    &.focusContainerClose {
+      width: 0;
+    }
+  }
+
+  .bookingModal {
+    min-width: 60% !important;
+  }
+}

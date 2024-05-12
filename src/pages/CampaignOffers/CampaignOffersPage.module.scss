@@ -1,0 +1,78 @@
+@import "../../pages/styleConst.scss";
+
+.campaignOffers {
+  background-color: #0d31ab;
+  // background-image: url("../../assets/img/bob-white.png");
+  // background-repeat: no-repeat;
+  // background-position: right bottom;
+  min-height: calc(100% - 60px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #fff;
+  z-index: 50;
+
+  .coupon {
+    margin-top: 1rem;
+    z-index: 5;
+    position: relative;
+  }
+}
+
+.backgroundImage {
+  background-image: url("../../assets/img/bob-white.png");
+  background-repeat: no-repeat;
+  background-position: right bottom;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.offerTabs {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 6;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.offerTabButton {
+  border-radius: 1.5rem !important;
+  padding: 0.5rem 1rem !important;
+  border: 1px solid var(--primary-color) !important;
+  color: var(--primary-color) !important;
+}
+
+.selected {
+  background-color: var(--secondary-color) !important;
+}
+
+.unSelected {
+  background-color: #fff !important;
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .campaignOffers {
+    background-color: #fff;
+    // background-image: url("../../assets/img/bob-blue.png");
+    min-height: calc(100% - 90px);
+    color: inherit;
+  }
+
+  .backgroundImage {
+    background-image: url("../../assets/img/bob-blue.png");
+    background-size: 200px;
+  }
+
+  .offer {
+    width: 50vw;
+  }
+
+  .offerTabButton {
+    padding: 0.5rem 1.5rem !important;
+    gap: 1.5rem;
+  }
+}

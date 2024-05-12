@@ -1,0 +1,40 @@
+// @import '../../../../styleConst.scss';
+
+/* .local-experiences-modal {
+  .local-experiences-category {
+    .local-experiences-category-header {
+    }
+  }
+} */
+
+/* @media screen and (min-width: $mobile-view-breakpoint) {
+  .local-experiences-modal {
+    .local-experiences-category {
+      padding: 0 2rem 0 2rem;
+    }
+  }
+}
+ */
+
+.tourInfoModalPageLoading {
+  height: 25vh;
+}
+
+.tourInfoModalNoTours {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 3rem;
+}
+
+.tourInfoModalClose {
+  position: absolute;
+  right: 1rem;
+  top: 1.5rem;
+  border: none;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  filter: drop-shadow(0px 3px 2px #000);
+}

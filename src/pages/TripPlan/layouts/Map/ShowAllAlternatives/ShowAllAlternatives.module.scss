@@ -1,0 +1,67 @@
+@import "../../../../styleConst.scss";
+
+.showAllAlternatives {
+  // color: #666666;
+  // background-color: black;
+  // font-size: 0.9rem;
+  // font-weight: bold;
+
+  // box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px;
+  // border-radius: 4px;
+  // cursor: pointer;
+  // background-color: rgb(255, 255, 255);
+
+  position: absolute;
+  /* bottom: 4rem;
+  left: 1rem; */
+  bottom: 4rem;
+  left: 5px;
+
+  .showAllAlternativesButton {
+    height: 40px;
+    padding: 0.6rem 0.5rem;
+    svg {
+      fill: black;
+    }
+
+    &.showAllAlternativesButtonActive {
+      svg {
+        fill: #4285f4;
+      }
+    }
+  }
+}
+
+.mapButtons {
+  color: #666;
+  width: 40px;
+  /* height: 40px; */
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 1px 4px -1px rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #fff;
+  text-align: center;
+
+  // .map-button {
+  //   height: 40px;
+  //   /* margin-top: 5px; */
+  // }
+
+  // .map-button-split {
+  //   position: relative;
+  //   overflow: hidden;
+  //   width: 30px;
+  //   height: 1px;
+  //   margin: 0px 5px;
+  //   background-color: rgb(230, 230, 230);
+  //   top: 0px;
+  // }
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .showAllAlternatives {
+    bottom: 1rem;
+  }
+}

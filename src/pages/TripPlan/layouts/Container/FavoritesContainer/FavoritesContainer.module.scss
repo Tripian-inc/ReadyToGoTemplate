@@ -1,0 +1,55 @@
+@import "../../../../styleConst.scss";
+
+.favoritesContainer {
+  // .containerHeight
+  // height: calc(100% - #{$mobile-navbar-height} - #{$trip-tab-menu});
+  z-index: 3;
+  width: 100%;
+  background-color: var(--background-color);
+  color: var(--text-primary-color);
+  position: fixed;
+  bottom: 0px;
+  left: 0;
+  transition: height #{$list-transition};
+
+  &.favoritesContainerClose {
+    height: 0;
+  }
+
+  .favoritesCloseIcon {
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    position: absolute;
+    top: 0px;
+    right: 0;
+    svg {
+      fill: var(--text-primary-color) !important;
+    }
+  }
+
+  .favoriteItemsLoading {
+    margin-top: 1.75rem;
+    margin-bottom: 1.75rem;
+  }
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .favoritesContainer {
+    // .containerHeight
+    // height: calc(100% - #{$desktop-navbar-height} - #{$trip-tab-menu});
+    width: 0;
+    bottom: 0;
+    transition: width #{$list-transition};
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+
+    &.favoritesContainerOpen {
+      width: $desktop-list-width;
+      /* min-width: 408px; */
+    }
+
+    &.favoritesContainerClose {
+      width: 0;
+    }
+  }
+}

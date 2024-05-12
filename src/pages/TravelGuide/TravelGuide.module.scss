@@ -1,0 +1,110 @@
+@import "../../pages/styleConst.scss";
+
+.tripTabMenuFake {
+  height: 48px;
+  width: 100%;
+  background-color: #fff;
+}
+
+.tripTapMenu {
+  position: fixed;
+  z-index: 16;
+  background-color: #fff;
+  padding: 0px;
+  width: 100%;
+  box-shadow: 0px 2px 3px 0px rgba(var(--text-primary-color-rgb), 0.3);
+  background-color: var(--background-color);
+}
+
+/* .travel-guide-section {
+  text-align: center;
+} */
+.ourPickHeader {
+  margin-right: 1rem;
+  margin-left: 1rem;
+}
+
+.travelGuidePx {
+  overflow: hidden;
+}
+
+.travelGuideMainDiv {
+  background-color: var(--background-color);
+}
+
+.ourPickSubHeader {
+  margin-left: 1rem;
+  display: block;
+}
+
+.ourPickHeaderDesc {
+  font-size: 0.85rem;
+}
+
+.travelGuideModalCloseIcon {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 2px #000);
+}
+
+.tourModalLoading {
+  height: 25vh;
+  // width: 70vw;
+}
+
+.tasteInfoYourBookingsModals {
+  min-width: 90% !important;
+  background-color: var(--background-color) !important;
+}
+
+.travelGuidePoiInfoModal {
+  border-radius: 0 !important;
+  background-color: var(--background-color) !important;
+}
+
+.topTenToursLoading {
+  height: 23.125rem;
+}
+
+.favoriteItemsLoading {
+  margin-top: 1.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.bookingModal {
+  min-height: 30rem !important;
+  min-width: 90% !important;
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .tripTapMenu {
+    padding: 0px 25%;
+  }
+
+  .travelGuidePx {
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+  }
+
+  .ourPickHeader {
+    margin-left: 3.5rem;
+  }
+
+  .ourPickSubHeader {
+    margin-left: 3.5rem;
+  }
+
+  .tasteInfoYourBookingsModals {
+    min-width: 60% !important;
+  }
+
+  .travelGuideMainDiv {
+    background-color: var(--background-color);
+    padding-right: 1.25rem;
+    padding-left: 1.25rem;
+  }
+}

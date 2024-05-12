@@ -1,0 +1,290 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+
+import Model, { helper } from "@tripian/model";
+import { PoiCategories, CloseIconButton } from "@tripian/react";
+
+import SearchPlace from "../../../../../components/SearchPlace/SearchPlace";
+import MustTryList from "../../../components/MustTryList/MustTryList";
+
+import IStepAlternatives from "../../../../../models/IStepAlternatives";
+
+import useTrip from "../../../../../hooks/useTrip";
+import useStep from "../../../../../hooks/useStep";
+import useSearchPoi from "../../../../../hooks/useSearchPoi";
+import useFocus from "../../../../../hooks/useFocus";
+import classes from "./SearchContainer.module.scss";
+
+const attractionsCategoryIds = [1, 28, 30, 32, 26, 29, 25, 49];
+const restaurantsCategoryIds = [3];
+const cafesCategoryIds = [24, 36, 33];
+const nightlifesCategoryIds = [4, 31, 35];
+const shoppingsCategoryIds = [34, 50, 51, 52, 53, 54];
+const categoryGroups = helper.getCategoryGroups();
+
+interface PlanIdStepDay {
+  planId: number;
+  step: Model.Step;
+  dayIndex: number;
+}
+
+interface ISearchContainer {
+  show: boolean;
+  close: () => void;
+  poiCategories: Model.PoiCategory[];
+  dayIndex: number;
+  plans: Model.Plan[];
+  alternatives: IStepAlternatives[];
+  selectedPoiCategoryIndex: number;
+  setSelectedPoiCategoryIndex: (newIndex: number) => void;
+}
+
+const SearchContainer: React.FC<ISearchContainer> = ({ show, close, poiCategories, dayIndex, plans, alternatives, selectedPoiCategoryIndex, setSelectedPoiCategoryIndex }) => {
+  const [clickedTabPoiCategoryIds, setClickedTabPoiCategoryIds] = useState<number[]>(selectedPoiCategoryIndex === 6 ? [] : categoryGroups[selectedPoiCategoryIndex].ids);
+
+  const { tripReference } = useTrip();
+  const { focusPoi, focusStep } = useFocus();
+  const { searchPoi } = useSearchPoi();
+  const { stepAdd, stepDelete } = useStep();
+
+  useEffect(() => {
+    if (selectedPoiCategoryIndex === 6) {
+      setClickedTabPoiCategoryIds([]);
+    } else {
+      setClickedTabPoiCategoryIds(categoryGroups[selectedPoiCategoryIndex].ids);
+    }
+  }, [selectedPoiCategoryIndex]);
+
+  const hasMustTry: boolean = tripReference !== undefined && tripReference.city.mustTries.length > 0;
+
+  const tabIndex = useCallback(() => {
+    if (clickedTabPoiCategoryIds.includes(1)) return 0;
+    if (clickedTabPoiCategoryIds.includes(3)) return 1;
+    if (clickedTabPoiCategoryIds.includes(24)) return 2;
+    if (clickedTabPoiCategoryIds.includes(4)) return 3;
+    if (clickedTabPoiCategoryIds.includes(34)) return 4;
+    if (clickedTabPoiCategoryIds.length === 0) return 6;
+    return 0;
+  }, [clickedTabPoiCategoryIds]);
+
+  const currentPlanId = useMemo(() => (dayIndex < plans.length ? plans[dayIndex].id : 0), [dayIndex, plans]);
+
+  const planStepDays: PlanIdStepDay[] = useMemo(() => {
+    let steps: PlanIdStepDay[] = [];
+
+    steps = plans.reduce((previousValue: PlanIdStepDay[], currentValue: Model.Plan, currentIndex: number) => {
+      if (currentValue) {
+        const currentSteps: PlanIdStepDay[] = currentValue.steps.map((step) => ({
+          planId: currentValue.id,
+          step,
+          dayIndex: currentIndex,
+        }));
+
+        return previousValue.concat(currentSteps);
+      }
+
+      return previousValue;
+    }, []);
+
+    return steps;
+  }, [plans]);
+
+  const planAlternatives = useMemo(() => {
+    const alternativePois = alternatives.reduce((previousValue: Model.Poi[], currentValue: IStepAlternatives) => previousValue.concat(currentValue.pois), []);
+
+    const excludedEmpties = alternativePois.filter((alternativePoi) => alternativePoi);
+
+    return helper.removeDuplicateValuesById<Model.Poi>(excludedEmpties);
+  }, [alternatives]);
+
+  const poiPlanStepDay = useCallback(
+    (poiId: number): PlanIdStepDay | undefined => planStepDays.find((memoizedStep) => memoizedStep.step.poi.id === poiId && memoizedStep.dayIndex === dayIndex),
+    [dayIndex, planStepDays]
+  );
+
+  const isCurrentDayStep = useCallback((poiId: number): boolean => !!poiPlanStepDay(poiId), [poiPlanStepDay]);
+
+  // for step poi dayIndexes like [0,1,2,...]
+  // for alternative poi [-1]
+  // not recommended poi [-2]
+  const poiDayIndexes = useCallback(
+    (poiId: number) => {
+      const poisSteps: PlanIdStepDay[] = planStepDays.filter((memoizedStep: PlanIdStepDay) => memoizedStep.step.poi.id === poiId);
+
+      // Multi plan poi part of day indexes
+      if (poisSteps.length > 0) return poisSteps.map((poisStep) => poisStep.dayIndex); // for step poi dayIndexes like [0,1,2,...]
+
+      // Only a plan part of day index
+      return [planAlternatives.findIndex((alternativePoi) => alternativePoi.id === poiId) > -1 ? -1 : -2];
+    },
+    [planAlternatives, planStepDays]
+  );
+
+  const memoizedList = useCallback(
+    (categoryIdsList: number[]) => {
+      const recommendedCurrentCategorySteps: {
+        planId: number;
+        step: Model.Step;
+        dayIndex: number;
+      }[] = planStepDays.filter((memoizedStep) => categoryIdsList.includes(memoizedStep.step.poi.category[0].id));
+
+      const recommendedCurrentCategoryStepPoisThisDay: Model.Poi[] = recommendedCurrentCategorySteps
+        .filter((rs) => rs.dayIndex === dayIndex)
+        .map((recommendedCurrentCategoryStep: { planId: number; step: Model.Step; dayIndex: number }) => recommendedCurrentCategoryStep.step.poi);
+
+      const recommendedCurrentCategoryStepPoisOtherDays: Model.Poi[] = recommendedCurrentCategorySteps
+        .filter((rs) => rs.dayIndex !== dayIndex)
+        .map((recommendedCurrentCategoryStep: { planId: number; step: Model.Step; dayIndex: number }) => recommendedCurrentCategoryStep.step.poi);
+
+      const recommendedCurrentCategoryAlternatives: Model.Poi[] = planAlternatives.filter((memoizedAlternative) => categoryIdsList.includes(memoizedAlternative.category[0].id));
+
+      const resultList: Model.Poi[] = [...recommendedCurrentCategoryStepPoisThisDay, ...recommendedCurrentCategoryStepPoisOtherDays, ...recommendedCurrentCategoryAlternatives];
+
+      return helper.removeDuplicateValuesById<Model.Poi>(resultList);
+    },
+    [dayIndex, planAlternatives, planStepDays]
+  );
+
+  const searchContainerClasses = [classes.searchContainer];
+  if (!window.tconfig.SHOW_OVERVIEW) searchContainerClasses.push("container-height");
+  else searchContainerClasses.push("container-height-tab");
+  if (show) searchContainerClasses.push(classes.searchContainerOpen);
+  else searchContainerClasses.push(classes.searchContainerClose);
+
+  const cardButtonOnClick = useCallback(
+    (poi: Model.Poi) => {
+      const planStepDay = poiPlanStepDay(poi.id);
+      if (planStepDay) {
+        stepDelete(planStepDay.step.id);
+      } else {
+        stepAdd(currentPlanId, poi.id);
+      }
+    },
+    [currentPlanId, poiPlanStepDay, stepAdd, stepDelete]
+  );
+
+  const focus = useCallback(
+    (poi: Model.Poi) => {
+      const planStepDay = poiPlanStepDay(poi.id);
+      if (planStepDay) focusStep(planStepDay.step);
+      else focusPoi(poi);
+    },
+    [focusPoi, focusStep, poiPlanStepDay]
+  );
+
+  const renderContent = useMemo(() => {
+    const index = tabIndex();
+
+    let attractionsClassname = "hide";
+    let restaurantsClassname = "hide";
+    let cafesClassname = "hide";
+    let nightlifesClassname = "hide";
+    let shoppingsClassname = "hide";
+    let mustTryListClassname = "hide";
+
+    if (index === 0) attractionsClassname = "";
+    if (index === 1) restaurantsClassname = "";
+    if (index === 2) cafesClassname = "";
+    if (index === 3) nightlifesClassname = "";
+    if (index === 4) shoppingsClassname = "";
+    if (index === 6) mustTryListClassname = "";
+
+    return (
+      <div className="px4">
+        {/* Attractions */}
+        <div className={attractionsClassname}>
+          <SearchPlace
+            poiCategoryIds={attractionsCategoryIds}
+            recommendedPois={memoizedList(attractionsCategoryIds)}
+            search={searchPoi}
+            focus={focus}
+            cardButonOnClick={cardButtonOnClick}
+            isCurrentDayStep={isCurrentDayStep}
+            getDayIndexes={poiDayIndexes}
+          />
+        </div>
+
+        {/* Restaurants */}
+        <div className={restaurantsClassname}>
+          <SearchPlace
+            poiCategoryIds={restaurantsCategoryIds}
+            recommendedPois={memoizedList(restaurantsCategoryIds)}
+            search={searchPoi}
+            focus={focus}
+            cardButonOnClick={cardButtonOnClick}
+            isCurrentDayStep={isCurrentDayStep}
+            getDayIndexes={poiDayIndexes}
+          />
+        </div>
+
+        {/* Cafes */}
+        <div className={cafesClassname}>
+          <SearchPlace
+            poiCategoryIds={cafesCategoryIds}
+            recommendedPois={memoizedList(cafesCategoryIds)}
+            search={searchPoi}
+            focus={focus}
+            cardButonOnClick={cardButtonOnClick}
+            isCurrentDayStep={isCurrentDayStep}
+            getDayIndexes={poiDayIndexes}
+          />
+        </div>
+
+        {/* Nightlife */}
+        <div className={nightlifesClassname}>
+          <SearchPlace
+            poiCategoryIds={nightlifesCategoryIds}
+            recommendedPois={memoizedList(nightlifesCategoryIds)}
+            search={searchPoi}
+            focus={focus}
+            cardButonOnClick={cardButtonOnClick}
+            isCurrentDayStep={isCurrentDayStep}
+            getDayIndexes={poiDayIndexes}
+          />
+        </div>
+
+        {/* Shopping */}
+        <div className={shoppingsClassname}>
+          <SearchPlace
+            poiCategoryIds={shoppingsCategoryIds}
+            recommendedPois={memoizedList(shoppingsCategoryIds)}
+            search={searchPoi}
+            focus={focus}
+            cardButonOnClick={cardButtonOnClick}
+            isCurrentDayStep={isCurrentDayStep}
+            getDayIndexes={poiDayIndexes}
+          />
+        </div>
+
+        {/* Must Try */}
+        {hasMustTry ? (
+          <div className={`${mustTryListClassname} mb12`}>
+            <MustTryList focus={focus} />
+          </div>
+        ) : null}
+      </div>
+    );
+  }, [cardButtonOnClick, focus, hasMustTry, isCurrentDayStep, memoizedList, poiDayIndexes, searchPoi, tabIndex]);
+
+  return (
+    <div className={searchContainerClasses.join(" ")}>
+      <div className="scrollable-y" style={{ height: "100%" }}>
+        <div className={`${classes.searchBoxClose} mt3 pl3`} style={{ display: "flex" }}>
+          <div className={`${classes.searchCloseIcon} m3`}>
+            <CloseIconButton fill="var(--text-primary-color)" clicked={close} />
+          </div>
+        </div>
+        <div style={{ width: "calc(100% - 2rem)", margin: "1rem auto" }}>
+          <PoiCategories
+            poiCategories={categoryGroups}
+            mustTry={hasMustTry}
+            selectedPoiCategoryIndex={selectedPoiCategoryIndex}
+            setSelectedPoiCategoryIndex={setSelectedPoiCategoryIndex}
+          />
+        </div>
+        {renderContent}
+      </div>
+    </div>
+  );
+};
+
+export default SearchContainer;

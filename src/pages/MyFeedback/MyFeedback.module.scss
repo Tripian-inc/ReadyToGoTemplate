@@ -1,0 +1,10 @@
+.myFeedback {
+  border-color: var(--primary-color);
+  border-radius: 1rem;
+  overflow: hidden;
+
+  .myFeedbackWrapper {
+    border: 1px solid #dadce0;
+    border-radius: 0.5rem;
+  }
+}

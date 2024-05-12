@@ -1,0 +1,115 @@
+@import "../../../../styleConst.scss";
+
+.searchOfferContainer {
+  // .container-height
+  // height: calc(100% - #{$mobile-navbar-height} - #{$trip-tab-menu});
+  z-index: 3;
+  width: 100%;
+  position: fixed;
+  bottom: 0px;
+  left: 0;
+  transition: height #{$list-transition};
+  background-color: var(--background-color);
+  color: var(--text-primary-color);
+
+  &.searchOffersContainerClose {
+    height: 0;
+  }
+
+  &.backgroundImage {
+    background-color: #0d31ab;
+    background-image: url("../../../../../assets/img/bob-white.png");
+    background-repeat: no-repeat;
+    background-position: right bottom;
+  }
+
+  .searchOffersCloseIcon {
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    position: absolute;
+    right: 0;
+  }
+
+  .offerCardsContent {
+    margin-top: 1.25rem;
+  }
+}
+
+.offerTabs {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 6;
+  gap: 1.5rem;
+  margin-top: 3.5rem;
+}
+
+.offerTabButton {
+  border-radius: 1.5rem !important;
+  padding: 0.5rem 1rem !important;
+  border: 1px solid var(--primary-color) !important;
+  color: var(--primary-color) !important;
+}
+
+.selected {
+  background-color: var(--secondary-color) !important;
+}
+
+.unSelected {
+  background-color: #fff !important;
+}
+
+.bbTextColor {
+  color: #fff;
+
+  svg {
+    fill: #fff !important;
+  }
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .searchOfferContainer {
+    // .container-height
+    // height: calc(100% - #{$desktop-navbar-height} - #{$trip-tab-menu});
+    width: 0;
+
+    bottom: 0;
+    transition: width #{$list-transition};
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+
+    &.searchOfferContainerOpen {
+      width: $desktop-list-width;
+      /* min-width: 408px; */
+    }
+
+    &.searchOffersContainerClose {
+      width: 0;
+    }
+
+    &.backgroundImage {
+      background-color: #fff;
+      background-image: url("../../../../../assets/img/bob-blue.png");
+      background-repeat: no-repeat;
+      background-position: right bottom;
+      background-size: 200px;
+    }
+  }
+
+  .offerTabButton {
+    padding: 0.5rem 1.5rem !important;
+    gap: 1.5rem;
+  }
+
+  .offerCardsContent {
+    padding: 0 1rem;
+  }
+
+  .bbTextColor {
+    color: var(--text-primary-color);
+
+    svg {
+      fill: var(--text-primary-color) !important;
+    }
+  }
+}

@@ -1,0 +1,126 @@
+@import "../../../../pages/styleConst.scss";
+
+.gygTourInfoForm {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  padding: 1rem;
+  background: #1a2b49;
+  width: 100%;
+  border-radius: 1rem;
+  min-width: unset;
+
+  .warningMessage {
+    width: 100%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gygTourInfoFormHeader {
+    color: #fff;
+    margin: 0 0 0.5rem 0.5rem;
+  }
+
+  .gygTourInfoFormList {
+    display: block;
+    align-items: center;
+    // justify-content: space-between;
+    list-style-type: none;
+    padding-left: 0;
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+}
+
+.checkAvailabilityButton {
+  background-color: #0071eb !important;
+  border-radius: 1rem;
+}
+
+.gygTourInfoListItemWrapper {
+  display: block;
+  justify-content: center;
+  align-items: center;
+  width: fit-content;
+  padding: 1rem;
+  background-color: white;
+  border: 1px solid #dbdbdb;
+}
+
+.gygTourInfoFormListItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style-type: none;
+  width: 20rem;
+  border-bottom: 1px solid #dbdbdb;
+}
+
+.gygTourInfoPersonAge {
+  color: gray;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.gygTourInfoPersonCount {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #fff;
+  color: #000;
+  font-size: 0.9125rem;
+  height: 3rem;
+  padding: 0rem 2rem;
+
+  &:hover {
+    border-color: rgba(var(--text-primary-color-rgb), 0.8);
+  }
+}
+
+.gygTourInfoPersonCountText {
+  font-weight: bold;
+  padding: 0 0.3125rem;
+  margin-bottom: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.gygTourInfoPeopleButton {
+  background-color: #f5f5f5;
+  padding: 0.8rem 3rem;
+  font-weight: 400;
+  text-align: center;
+  border-radius: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .gygTourInfoForm {
+    width: fit-content;
+    min-width: 35rem;
+    max-width: 50rem;
+    padding: 1rem;
+
+    .gygTourInfoFormList {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+
+      .gygTourInfoPersonAge {
+        position: absolute;
+        bottom: -1.25rem;
+        margin: 0;
+        padding-left: 0.5rem;
+      }
+    }
+  }
+
+  .gygTourInfoPeopleButton {
+    background-color: #f5f5f5;
+    padding: 0.8rem 3rem;
+    font-weight: 400;
+    border-radius: 0.75rem;
+    margin-top: 0;
+  }
+}

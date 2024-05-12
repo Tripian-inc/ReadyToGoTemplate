@@ -1,0 +1,63 @@
+@import "../../pages/styleConst.scss";
+// .trip-tab-menu {
+//   position: fixed;
+//   z-index: 5;
+//   background-color: rgb(255, 255, 255);
+//   padding: 0px 25%;
+//   width: 100%;
+//   box-shadow: 0px 3px 5px 0px rgba(0, 0, 0, 0.3);
+// }
+.tripPlannerModalCloseIcon {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 2px #000);
+  bottom: 1% !important;
+}
+
+.trip-planner-modal-loading {
+  height: 25vh;
+  // width: 70vw;
+}
+.tasteInfoModal {
+  min-width: 90% !important;
+  .bookingPopUp {
+    background-color: var(--background-color);
+    min-height: 10rem;
+    color: var(--text-primary-color);
+  }
+}
+
+.bookingReservationCancelText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // border: 1px solid #ccc;
+  padding: 0.75rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  margin: 0 0.75rem;
+}
+
+.bookingModal {
+  min-height: 30rem !important;
+  min-width: 90% !important;
+}
+
+.createUpdateTripLoading {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .tasteInfoModal {
+    min-width: 60% !important;
+  }
+}

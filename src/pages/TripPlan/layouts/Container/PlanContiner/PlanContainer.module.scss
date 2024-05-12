@@ -1,0 +1,40 @@
+@import "../../../../styleConst.scss";
+
+.planContainer {
+  // .container-height
+  // height: calc(100% - #{$mobile-navbar-height} - #{$trip-tab-menu});
+  z-index: 1;
+  width: 100%;
+  background-color: var(--background-color);
+  position: fixed;
+  bottom: 0px;
+  left: 0;
+  transition: height #{$list-transition};
+
+  &.planContainerOpen {
+    bottom: 0;
+  }
+
+  &.planContainerClose {
+    height: 0;
+  }
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .planContainer {
+    // .container-height
+    // height: calc(100% - #{$desktop-navbar-height} - #{$trip-tab-menu});
+    width: 0;
+    background-color: var(--background-color);
+    bottom: 0;
+    transition: width #{$list-transition};
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+
+    &.planContainerOpen,
+    &.planContainerClose {
+      width: $desktop-list-width;
+      /* min-width: 408px; */
+      bottom: 0;
+    }
+  }
+}

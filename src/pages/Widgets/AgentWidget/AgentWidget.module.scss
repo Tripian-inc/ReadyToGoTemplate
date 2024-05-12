@@ -1,0 +1,46 @@
+@import "../../../pages/styleConst.scss";
+
+.successMessage {
+  width: 98%;
+  border: 1px solid #ccc;
+  border-radius: 0.25rem;
+  padding: 2rem;
+  justify-content: space-between;
+  position: absolute;
+  top: calc(50% - 3rem);
+  margin: 0 auto;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .successMessageHeader {
+    padding-bottom: 0.5rem;
+  }
+
+  .successMessageContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .tripUrl {
+      margin-right: 0.5rem;
+      -webkit-line-clamp: 1;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      max-width: 15rem;
+    }
+  }
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .successMessage {
+    width: fit-content;
+  }
+
+  .tripUrl {
+    max-width: unset !important;
+  }
+}

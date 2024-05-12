@@ -1,0 +1,146 @@
+@import "../../pages/styleConst.scss";
+
+.trip-tab-menu-fake {
+  height: 48px;
+  width: 100%;
+  background-color: #fff;
+}
+
+.tripTabMenu {
+  position: fixed;
+  z-index: 16;
+  // background-color: #fff;
+  padding: 0px;
+  width: 100%;
+  box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* .overview-guide-section {
+  text-align: center;
+} */
+
+.covid-warn {
+  display: flex;
+  background-color: var(--warning-color);
+  font-weight: bold;
+  font-size: 0.9rem;
+  align-items: center;
+
+  .covid-warn-logo {
+    height: 60px;
+    border-right: 1px solid rgba(var(--warning-color-rgb)), 075;
+  }
+
+  .covid-warn-text {
+    flex: 1;
+    padding: 12px;
+    line-height: 1.25rem;
+    // .covid-warn-text-sub {
+    //   font-style: italic;
+    //   font-weight: normal;
+    //   color: white;
+    // }
+  }
+
+  .covid-warn-close {
+    padding: 20px;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+}
+
+.ourPickHeader {
+  margin-right: 1rem;
+  margin-left: 1rem;
+}
+
+.ourPickDayHeader {
+  margin-right: 1rem;
+  margin-left: 1rem;
+}
+
+.overviewGuidePx {
+  overflow: hidden;
+}
+
+.ourPickSubHeader {
+  margin-left: 1rem;
+  display: block;
+}
+
+.ourPickHeaderDesc {
+  font-size: 0.85rem;
+}
+
+.overviewGuideModalCloseIcon {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 2px #000);
+}
+
+.tour-modal-loading {
+  height: 25vh;
+  // width: 70vw;
+}
+
+.tasteInfoYourBookingsModals {
+  min-width: 90% !important;
+  .bookingPopUp {
+    color: var(--text-primary-color);
+    background-color: var(--background-color);
+  }
+}
+
+.overviewGuidePoiInfoModal {
+  border-radius: 0 !important;
+}
+
+.top-ten-tours-loading {
+  height: 23.125rem;
+}
+
+.favoriteItemsLoading {
+  margin-top: 1.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.bookingModal {
+  min-height: 30rem !important;
+  min-width: 90% !important;
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .trip-tab-menu {
+    padding: 0px 25%;
+  }
+
+  .overviewGuidePx {
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+  }
+
+  .ourPickHeader {
+    margin-left: 3.5rem;
+  }
+
+  .ourPickDayHeader {
+    margin-left: 3.5rem;
+  }
+
+  .ourPickSubHeader {
+    margin-left: 3.5rem;
+  }
+
+  .tasteInfoYourBookingsModals {
+    min-width: 60% !important;
+  }
+
+  // .overviewGuideMainDiv {
+  //   padding-right: 1.25rem;
+  //   padding-left: 1.25rem;
+  // }
+}
