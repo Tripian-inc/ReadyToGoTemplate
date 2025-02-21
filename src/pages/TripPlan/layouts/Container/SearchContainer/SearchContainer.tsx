@@ -18,7 +18,6 @@ import { CloneModal } from "../../../../../components/CloneModal/CloneModal";
 // const cafesCategoryIds = [24, 36, 33];
 // const nightlifesCategoryIds = [4, 31, 35];
 // const shoppingsCategoryIds = [34, 50, 51, 52, 53, 54];
-const categoryGroups = helper.getCategoryGroups();
 
 interface PlanIdStepDay {
   planId: number;
@@ -27,6 +26,7 @@ interface PlanIdStepDay {
 }
 
 interface ISearchContainer {
+  poiCategoryGroups: Model.PoiCategoryGroup[];
   show: boolean;
   close: () => void;
   // poiCategories: Model.PoiCategory[];
@@ -35,21 +35,32 @@ interface ISearchContainer {
   tripReadOnly: boolean;
   plans: Model.Plan[];
   alternatives: IStepAlternatives[];
-  selectedPoiCategoryIndexes: number[];
-  setSelectedPoiCategoryIndexes: (newIndexes: number[]) => void;
+  selectedPoiCategoryGroups: Model.PoiCategoryGroup[];
+  setSelectedPoiCategoryGroups: (newPoiCategoryGroups: Model.PoiCategoryGroup[]) => void;
+  gygTourIds: number[];
+  bbTourIds: number[];
+  viatorTourIds: string[];
+  toristyTourIds: string[];
+  toursLoading: boolean;
   t: (value: Model.TranslationKey) => string;
 }
 
 const SearchContainer: React.FC<ISearchContainer> = ({
+  poiCategoryGroups,
   show,
-  close /*, poiCategories*/,
+  close,
   dayIndex,
   tripHash,
   tripReadOnly,
   plans,
   alternatives,
-  selectedPoiCategoryIndexes,
-  setSelectedPoiCategoryIndexes,
+  selectedPoiCategoryGroups,
+  setSelectedPoiCategoryGroups,
+  gygTourIds,
+  bbTourIds,
+  viatorTourIds,
+  toristyTourIds,
+  toursLoading,
   t,
 }) => {
   // const [query, setQuery] = useState<string>("");
@@ -60,22 +71,41 @@ const SearchContainer: React.FC<ISearchContainer> = ({
 
   // const { tripReference } = useTrip();
   const { focusPoi, focusStep } = useFocus();
-  const { openSearchPoi, searchPoiAutoComplete } = useSearchPoi();
+  const { openSearchPoi, searchPoiAutoCompleteTags } = useSearchPoi();
   const { stepAdd, stepDelete } = useStep();
 
-  useEffect(() => {
-    searchPoiAutoComplete().then((tagList: string[]) => {
-      const options = tagList.map((tag) => ({ value: tag, label: tag }));
-      setPoiCategoryOptions(options);
-    });
-  }, [searchPoiAutoComplete]);
-
   const selectedPoiCategoryIds = useMemo(() => {
-    const allIds = selectedPoiCategoryIndexes.reduce((acc: number[], curr: number) => {
-      return acc.concat(categoryGroups[curr].ids);
-    }, []);
+    const allIds: number[] = [];
+
+    const selectedCategoryGroups = selectedPoiCategoryGroups.map((categoryGroup) => {
+      const result: Model.CategoryGroupResult = {
+        ids: categoryGroup.categories.map((category: Model.PoiCategory) => category.id),
+        group: categoryGroup.name,
+      };
+      return result;
+    });
+
+    selectedCategoryGroups.forEach((group) => {
+      allIds.push(...group.ids);
+    });
     return allIds;
-  }, [selectedPoiCategoryIndexes]);
+  }, [selectedPoiCategoryGroups]);
+
+  // useEffect(() => {
+  //   searchPoiAutoComplete().then((tagList: string[]) => {
+  //     const options = tagList.map((tag) => ({ value: tag, label: tag }));
+  //     setPoiCategoryOptions(options);
+  //   });
+  // }, [searchPoiAutoComplete]);
+
+  useEffect(() => {
+    if (selectedPoiCategoryIds && selectedPoiCategoryIds.length > 0) {
+      searchPoiAutoCompleteTags(selectedPoiCategoryIds).then((tagList: { id: number; name: string }[]) => {
+        const options = tagList.map((tag) => ({ value: tag.name, label: tag.name }));
+        setPoiCategoryOptions(options);
+      });
+    }
+  }, [searchPoiAutoCompleteTags, selectedPoiCategoryIds]);
 
   // const hasMustTry: boolean = tripReference !== undefined && tripReference.city.mustTries.length > 0;
 
@@ -200,16 +230,17 @@ const SearchContainer: React.FC<ISearchContainer> = ({
             />
           </div>
         </div>
-        <div className="flex items-center gap-4 justify-between" style={{ width: "calc(100% - 2rem)", margin: "1rem auto" }}>
+        <div className="flex flex-col items-center gap-4 justify-between md:flex-row " style={{ width: "calc(100% - 2rem)", margin: "1rem auto" }}>
           <PoiCategories
-            selectedPoiCategoryIndexes={selectedPoiCategoryIndexes}
-            setSelectedPoiCategoryIndexes={(newIndex: number[]) => {
-              setSelectedPoiCategoryIndexes(newIndex);
-              if (newIndex.length === 0) {
+            selectedPoiCategoryGroups={selectedPoiCategoryGroups}
+            setSelectedPoiCategoryGroups={(newPoiCategoryGroups: Model.PoiCategoryGroup[]) => {
+              setSelectedPoiCategoryGroups(newPoiCategoryGroups);
+              if (newPoiCategoryGroups.length === 0) {
                 setSelectedTags([]);
               }
             }}
             t={t}
+            categoryGroups={poiCategoryGroups}
           />
           <PoiSearchAutoComplete
             options={poiCategoryOptions}
@@ -262,6 +293,11 @@ const SearchContainer: React.FC<ISearchContainer> = ({
             cardButonOnClick={cardButtonOnClick}
             isCurrentDayStep={isCurrentDayStep}
             getDayIndexes={poiDayIndexes}
+            gygTourIds={gygTourIds}
+            bbTourIds={bbTourIds}
+            viatorTourIds={viatorTourIds}
+            toristyTourIds={toristyTourIds}
+            toursLoading={toursLoading}
             t={t}
           />
         </div>

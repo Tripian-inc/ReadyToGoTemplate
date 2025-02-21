@@ -1,0 +1,123 @@
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
+import { api, init } from '@tripian/core';
+import Model from '@tripian/model';
+import { CityInfo, PageLoading, PoiInfoText, PoiInfoImage, Modal } from '@tripian/react';
+import { CITY } from '../../constants/ROUTER_PATH_TITLE';
+
+const City = () => {
+  const [cityInfo, setCityInfo] = useState<Model.City>();
+  const [pois, setPois] = useState<Model.Poi[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [modalState, setModalState] = useState<{ show: boolean; poiInfo?: Model.Poi }>({ show: false });
+  const [currentTasteState, setCurrentTasteState] = useState<{ tasteId: number; loading: boolean }>();
+
+  document.title = CITY.TITLE();
+
+  const { id } = useParams<{ id: string }>();
+
+  useEffect(() => {
+    let unmonted = false;
+
+    init(window.tconfig.TRIPIAN_API_URL, window.tconfig.TRIPIAN_API_KEY);
+    api
+      .city(Number(id))
+      .then((cityInfoResponse) => {
+        if (!unmonted) {
+          setCityInfo(cityInfoResponse);
+        }
+      })
+      .catch((err) => {
+        setErrorMessage(err);
+      })
+      .then(() => {
+        setLoading(false);
+      });
+
+    return () => {
+      unmonted = true;
+    };
+  }, [id]);
+
+  const getPois = useCallback(
+    (tasteId: number) => {
+      const tastesIds: Array<number> = [];
+      tastesIds[0] = tasteId;
+      api.poisMustTrySearch({ cityId: +id, mustTryIds: tastesIds, limit: 100 }).then((mustTryResponse) => {
+        setPois(mustTryResponse);
+        setCurrentTasteState({ tasteId, loading: false });
+      });
+    },
+    [id],
+  );
+
+  const memoizedIsMobile = useMemo(() => {
+    return window.matchMedia('(max-width: 768px)').matches;
+  }, []);
+
+  const poiInfoModal = (
+    <Modal
+      show={modalState.show}
+      style={memoizedIsMobile ? { padding: '0', top: '5%', bottom: '5%' } : { padding: '0', width: '62rem', left: 'calc(50% - 31rem)' }}
+      backdropClick={() => {
+        setModalState({ show: false });
+      }}
+    >
+      {modalState.poiInfo ? (
+        <div className="row mb0">
+          <div className="col col12 col6-m p0 mb0">
+            <PoiInfoImage
+              poi={modalState.poiInfo}
+              favoriteClick={() => {}}
+              hideButtons
+              favorite={false}
+              close={() => {
+                setModalState({ show: false });
+              }}
+              favoriteLoading={false}
+              square
+            />
+          </div>
+          <div className="col col12 col6-m p0 mb0">
+            <PoiInfoText poi={modalState.poiInfo} />
+          </div>
+        </div>
+      ) : null}
+    </Modal>
+  );
+
+  if (loading) {
+    return <PageLoading />;
+  }
+
+  return (
+    <>
+      {poiInfoModal}
+      {cityInfo && !errorMessage ? (
+        <CityInfo
+          city={cityInfo}
+          pois={pois}
+          poiCardClicked={(poi) => {
+            setModalState({ poiInfo: poi, show: true });
+          }}
+          currentTaste={currentTasteState}
+          tasteClicked={(tasteId) => {
+            if (currentTasteState?.tasteId === tasteId) {
+              setCurrentTasteState(undefined);
+            } else {
+              setCurrentTasteState({ tasteId, loading: true });
+              getPois(tasteId);
+            }
+          }}
+        />
+      ) : (
+        <div className="full-center" style={{ maxWidth: '100%', textAlign: 'center' }}>
+          <span>{errorMessage}</span>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default City;

@@ -70,29 +70,48 @@ const GygTourInfo: React.FC<IGygTourInfo> = ({ cityId, cityName, tourId, startDa
   }, []);
 
   useEffect(() => {
-    if (gygTourData?.availability.available_dates && gygTourData?.availability.available_dates.length > 0) {
-      setAvailableDate(gygTourData?.availability.available_dates[0].date);
+    if (gygTourData?.availability.available_dates && gygTourData.availability.available_dates.length > 0) {
+      const availableDates = gygTourData.availability.available_dates.map((item) => item.date);
+      const startMoment = moment(startDate);
+      let selectedDate = availableDates[0];
+
+      if (startMoment.isValid()) {
+        for (let i = 0; i < availableDates.length; i++) {
+          const currentMoment = moment(availableDates[i]);
+          if (currentMoment.isSameOrAfter(startMoment)) {
+            selectedDate = availableDates[i];
+            break;
+          }
+        }
+      }
+
+      setAvailableDate(selectedDate);
     }
-  }, [gygTourData?.availability.available_dates]);
+  }, [gygTourData?.availability.available_dates, startDate]);
 
   useEffect(() => {
     if (gygTourData && gygTourData.availability.categories.length > 0) {
       const newPersonsCategories = gygTourData.availability.categories.map((x) => ({ ...x, count: 0 }));
 
-      if (adults) {
-        const adultsCount = Number(adults);
-        const newAdultsCategories = newPersonsCategories.find((x) => x.name === "Adults");
-        if (newAdultsCategories) {
-          newAdultsCategories.count = adultsCount;
-        }
+      const adultsCount = adults ? Number(adults) : 0;
+      const childrenCount = children ? Number(children) : 0;
+
+      // ADULT
+      const newAdultsCategories = newPersonsCategories.find((x) => x.ticket_category === "adult");
+      if (newAdultsCategories) {
+        newAdultsCategories.count = adultsCount;
       }
 
-      if (children) {
-        const childrenCount = Number(children);
-        const newChildrenCategories = newPersonsCategories.find((x) => x.name === "Children");
-        if (newChildrenCategories) {
-          newChildrenCategories.count = childrenCount;
-        }
+      // CHILD
+      const newChildrenCategories = newPersonsCategories.find((x) => x.ticket_category === "child");
+      if (newChildrenCategories) {
+        newChildrenCategories.count = childrenCount;
+      }
+
+      // GROUP
+      const travelerCategory = newPersonsCategories.find((x) => x.ticket_category === "group");
+      if (travelerCategory) {
+        travelerCategory.count = adultsCount + childrenCount;
       }
 
       setPersonsCategories(newPersonsCategories);
@@ -180,24 +199,34 @@ const GygTourInfo: React.FC<IGygTourInfo> = ({ cityId, cityName, tourId, startDa
                 <div className="row mb0">
                   {gygTourPriceBreakdown && gygTourPriceBreakdown.tour_options.length > 0 && (
                     <div className="col col12 col8-m mb0">
-                      {gygTourPriceBreakdown.tour_options
-                        .filter((t) => t.time_slots.length > 0)
-                        .map((tourDataOption) => (
-                          <GygTourOption
-                            key={tourDataOption.option_id.toString()}
-                            tourPriceBreakdownOption={tourDataOption}
-                            tourOption={gygTourOptions?.find((t) => t.option_id === tourDataOption.option_id)}
-                            title={gygTourData?.tour.title}
-                            startTime={availableDate}
-                            bookingRequestCallback={async (bookingRequest: Providers.Gyg.TourBookingRequest) => {
-                              const booking = await gygTourBooking(bookingRequest);
-                              if (booking === true) setShowShoppingForm(true);
-                            }}
-                            personsCategories={personsCategories}
-                            participantsRange={gygTourData?.availability.participants_range}
-                            t={t}
-                          />
-                        ))}
+                      {gygTourPriceBreakdown.tour_options.filter((t) =>
+                        t.time_slots.some((slot) => slot.price_breakdown?.price_summary?.retail_price !== undefined && slot.price_breakdown?.price_summary?.currency !== undefined)
+                      ).length > 0 ? (
+                        gygTourPriceBreakdown.tour_options
+                          .filter((t) =>
+                            t.time_slots.some(
+                              (slot) => slot.price_breakdown?.price_summary?.retail_price !== undefined && slot.price_breakdown?.price_summary?.currency !== undefined
+                            )
+                          )
+                          .map((tourDataOption) => (
+                            <GygTourOption
+                              key={tourDataOption.option_id.toString()}
+                              tourPriceBreakdownOption={tourDataOption}
+                              tourOption={gygTourOptions?.find((t) => t.option_id === tourDataOption.option_id)}
+                              title={gygTourData?.tour.title}
+                              startTime={availableDate}
+                              bookingRequestCallback={async (bookingRequest: Providers.Gyg.TourBookingRequest) => {
+                                const booking = await gygTourBooking(bookingRequest);
+                                if (booking === true) setShowShoppingForm(true);
+                              }}
+                              personsCategories={personsCategories}
+                              participantsRange={gygTourData?.availability.participants_range}
+                              t={t}
+                            />
+                          ))
+                      ) : (
+                        <p className="text-center mb-8 text-red-500">{t("trips.myTrips.localExperiences.tourDetails.optionNotFound")}.</p>
+                      )}
                     </div>
                   )}
                 </div>

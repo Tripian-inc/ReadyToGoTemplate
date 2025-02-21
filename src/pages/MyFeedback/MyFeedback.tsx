@@ -46,7 +46,7 @@ const MyFeedback = () => {
           <h3 className="center mt10">{t("user.myFeedback.warning")}</h3>
         ) : (
           <div className={` ${classes.myFeedbackWrapper} container mt10`}>
-            <UserFeedbacks userFeedbacks={userFeed} />
+            <UserFeedbacks t={t} userFeedbacks={userFeed} />
           </div>
         )}
       </div>

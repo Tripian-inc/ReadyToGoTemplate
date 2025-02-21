@@ -1,0 +1,83 @@
+@import "../../../styleConst.scss";
+
+.search-place-button {
+  /* min-width: 9.35rem; */
+  &:hover {
+    border-color: rgba(var(--text-primary-color-rgb), 0.8) !important;
+  }
+}
+
+.borderBottomLight {
+  border-bottom: 1px solid rgb(0 0 0 / 10%);
+}
+
+.stepListMain {
+  background-color: var(--background-color);
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.searchToursButton {
+  /* min-width: 9.35rem; */
+  border: 0.0625rem solid rgba(var(--text-primary-color-rgb), 0.24);
+  color: #000;
+  background: #fff;
+  padding: 0.5rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  height: 3.1rem;
+
+  &:hover {
+    border-color: rgba(var(--text-primary-color-rgb), 0.75) !important;
+    // transform: translateY(-3px);
+  }
+
+  .stepListSvg {
+    fill: #000;
+    width: 1.5rem;
+    margin-right: 1.5rem;
+  }
+}
+
+.stepList {
+  text-align: left;
+  background-color: var(--background-color);
+  /* color: green; */
+  /* padding-bottom: calc(1.5 * #{$mobile-menu-height}); */
+  max-height: calc(100% - 100px) !important;
+
+  &::after {
+    content: "";
+    display: block;
+    padding-bottom: calc(1.5 * #{$mobile-menu-height});
+  }
+
+  .switchCenter {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .switch {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+    float: right;
+  }
+
+  .stepListCards,
+  .startAccommendation {
+    /* border: 1px solid red; */
+    padding: 0.5rem;
+  }
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  .stepList::after {
+    padding-bottom: 1.5rem;
+  }
+}

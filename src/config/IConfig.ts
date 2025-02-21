@@ -110,6 +110,8 @@ interface IConfig {
   LOGIN_WITH_HASH: boolean;
   SAVE_SESSION: boolean;
 
+  WIDGET_THEME_1: boolean;
+
   /**
    * Providers
    */
@@ -123,6 +125,8 @@ interface IConfig {
   RESTAURANT_RESERVATION_PROVIDER_IDS: Model.PROVIDER_ID[];
   ACCOMMODATION_PROVIDER_ID: Model.PROVIDER_ID;
   CAR_RENT_PROVIDER_ID: Model.PROVIDER_ID;
+
+  SOCIAL_LOGIN: boolean;
 
   T: Model.TranslationList;
 }

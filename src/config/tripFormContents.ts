@@ -11,6 +11,18 @@ export const stepHeaders = (headers: string[]): { stepId: number; header: string
   return steps;
 };
 
+/* 
+https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/default.png
+https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/destination.png
+https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/arrival-date.png
+https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/departure-date.png
+https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/arrival-departure-hour.png
+https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/add-travelers.png
+https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/add-children.png
+https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/accommodation.png
+https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/companion.png
+ */
+
 export const destinationTips = (tips: { title: string; description: string }[]): { iconUrl: string; title: string; description: string }[] => {
   return [
     {
@@ -46,6 +58,39 @@ export const destinationTips = (tips: { title: string; description: string }[]):
   ];
 };
 
+// export const destinationTips: { iconUrl: string; title: string; description: string }[] = [
+//   {
+//     title: "Hover the areas for info",
+//     description: "If you close a field, we will provide you with relevant explanations.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/default.svg",
+//   },
+//   {
+//     title: "Destination",
+//     description: "Choose a destination you'd like to visit from our rich database.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/destination.svg",
+//   },
+//   {
+//     title: "Arrival Date",
+//     description: "Select the arrival date.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/arrival-date.svg",
+//   },
+//   {
+//     title: "Departure Date",
+//     description: "Select the departure date.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/departure-date.svg",
+//   },
+//   {
+//     title: "Arrival Hours",
+//     description: "Choose the hour you'll land and depart from your destination.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/arrival-departure-hour.svg",
+//   },
+//   {
+//     title: "Departure Hours",
+//     description: "Choose the hour you'll land and depart from your destination.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/arrival-departure-hour.svg",
+//   },
+// ];
+
 export const travelerInfoTips = (tips: { title: string; description: string }[]): { iconUrl: string; title: string; description: string }[] => {
   return [
     {
@@ -76,6 +121,34 @@ export const travelerInfoTips = (tips: { title: string; description: string }[])
   ];
 };
 
+// export const travelerInfoTips: { iconUrl: string; title: string; description: string }[] = [
+//   {
+//     title: "Hover the areas for info",
+//     description: "If you close a field, we will provide you with relevant explanations.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/default.svg",
+//   },
+//   {
+//     title: "Travelers Number",
+//     description: "Enter the amount of buddies you are visiting with.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/traveler-numbers-profile.svg",
+//   },
+//   {
+//     title: "Children Number",
+//     description: "Enter the amount of buddies you are visiting with.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/traveler-numbers-children.svg",
+//   },
+//   {
+//     title: "Starting Point",
+//     description: "Select your homebase address which you'll be staying at.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/accommodation.svg",
+//   },
+//   {
+//     title: "Companions",
+//     description: "Select or create an individualized travel buddy you'll be visiting with.",
+//     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/companion.svg",
+//   },
+// ];
+
 export const questionDefaultTip = ({ title, description }): { iconUrl: string; title: string; description: string } => {
   return {
     title,
@@ -83,3 +156,9 @@ export const questionDefaultTip = ({ title, description }): { iconUrl: string; t
     iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/default.svg",
   };
 };
+
+// export const questionDefaultTip = {
+//   title: "Hover the areas for more info",
+//   description: "If you close a field, we will provide you with relevant explanations.",
+//   iconUrl: "https://poi-pics.s3.eu-west-1.amazonaws.com/General/icons/default.svg",
+// };

@@ -6,7 +6,20 @@ import React, { useCallback, useMemo, useState } from "react";
 import { useHistory, useParams } from "react-router-dom";
 import Model, { Providers } from "@tripian/model";
 import { easy, providers } from "@tripian/core";
-import { StepInfo, PoiInfo, AccommondationInfo, Modal, Booking, Button, PreLoading, CloseIconButton, ReservationDetails, BbAccommodationInfo, BbCarRentInfo } from "@tripian/react";
+import {
+  StepInfo,
+  PoiInfo,
+  AccommondationInfo,
+  Modal,
+  Booking,
+  Button,
+  PreLoading,
+  CloseIconButton,
+  ReservationDetails,
+  BbAccommodationInfo,
+  BbCarRentInfo,
+  RezdyTourInfo,
+} from "@tripian/react";
 import { PLACE_INFO, QR_READER } from "../../../../../constants/ROUTER_PATH_TITLE";
 import useTrip from "../../../../../hooks/useTrip";
 import usePlan from "../../../../../hooks/usePlan";
@@ -31,9 +44,38 @@ interface IFocusContainer {
   myAllOffers?: Model.Poi[];
   offerOptIn: (offerId: number, optInDate: string) => Promise<void>;
   offerOptOut: (offerId: number) => Promise<void>;
+  gygTourIds: number[];
+  bbTourIds: number[];
+  viatorTourIds: string[];
+  toristyTourIds: string[];
+  toursLoading: boolean;
+  hideActionButtons?: boolean;
+  hideFavoriteIcon?: boolean;
+  hideScore?: boolean;
+  hidePartOfDay?: boolean;
+  hideFeatures?: boolean;
+  hideCuisine?: boolean;
 }
 
-const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focus, */ showTourInfoModal, isLoadingOffer, myAllOffers, offerOptIn, offerOptOut }) => {
+const FocusContainer: React.FC<IFocusContainer> = ({
+  /* show, */ planId,
+  /* focus, */ showTourInfoModal,
+  isLoadingOffer,
+  myAllOffers,
+  offerOptIn,
+  offerOptOut,
+  gygTourIds,
+  bbTourIds,
+  viatorTourIds,
+  toristyTourIds,
+  toursLoading,
+  hideActionButtons = false,
+  hideFavoriteIcon = false,
+  hideScore = false,
+  hidePartOfDay = false,
+  hideFeatures = false,
+  hideCuisine = false,
+}) => {
   const [showCloneModal, setShowCloneModal] = useState<boolean>(false);
   const [bookingModalState, setBookingModalState] = useState<{
     show: boolean;
@@ -69,7 +111,7 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
   const focusContainerClasses = [classes.focusContainer];
   if (!window.tconfig.SHOW_OVERVIEW) focusContainerClasses.push("container-height");
   else focusContainerClasses.push("container-height-tab");
-  if (focus.step || focus.alternative || focus.poi || focus.providerPoi || focus.carRentOffer) focusContainerClasses.push(classes.focusContainerOpen);
+  if (focus.step || focus.alternative || focus.poi || focus.providerPoi || focus.carRentOffer || focus.providerTour) focusContainerClasses.push(classes.focusContainerOpen);
   else focusContainerClasses.push(classes.focusContainerClose);
 
   const isFavorite = (poiId: string) => (favorites ? favorites.findIndex((favorite) => favorite.poiId === poiId) > -1 : false);
@@ -145,6 +187,21 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
     }
   }, []);
 
+  const memoizedGetTourInfo = useCallback(
+    (productId: string, poi: Model.Poi) => {
+      const product = poi.bookings.find((b) => b.products.some((p) => p.id.toString() === productId));
+
+      if (product?.providerId === Model.PROVIDER_ID.GOCITY) {
+        const productUrl = product.products.find((p) => p.id.toString() === productId)?.url;
+        window.open(productUrl || "https://gocity.com");
+        return;
+      }
+
+      showTourInfoModal(productId);
+    },
+    [showTourInfoModal]
+  );
+
   const memoizedReservationRequest = useCallback(
     (reservationModel: Providers.Yelp.ReservationRequest) => providers.yelp?.reservation(reservationModel) as Promise<Providers.Yelp.Reservation>,
     []
@@ -161,9 +218,14 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
           reservation_details: reservationDetails,
         };
 
-        reservationAdd({ key: Model.PROVIDER_NAME.YELP, tripHash: hash, poiId: poi.id, provider, value: reservationInfo }, false).finally(() => {
-          setBookingModalState({ show: false, businessId: "", isEditMode: false });
-        });
+        const startDateTime = `${reservationDetails.date} ${reservationDetails.time}`;
+        const formattedStartDateTime = moment(startDateTime).format("YYYY-MM-DD HH:mm:ss");
+
+        reservationAdd({ key: Model.PROVIDER_NAME.YELP, tripHash: hash, poiId: poi.id, provider, value: reservationInfo, bookingDateTime: formattedStartDateTime }, false).finally(
+          () => {
+            setBookingModalState({ show: false, businessId: "", isEditMode: false });
+          }
+        );
       }
 
       return null;
@@ -189,6 +251,17 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
       cloneTrip();
     } else {
       if (optIn) {
+        const baseDate = moment(optInDate);
+        const currentTime = moment();
+        const dateTime = baseDate
+          .set({
+            hour: currentTime.hour(),
+            minute: currentTime.minute(),
+            second: currentTime.second(),
+          })
+          .tz(tripReference?.city.timezone || "UTC")
+          .format("YYYY-MM-DD HH:mm:ss");
+
         if (offer.offerType === Model.OFFER_TYPE.VOUCHER) {
           const tdate = new easy.TDate({
             startDate: offer.timeframe.start,
@@ -197,14 +270,12 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
             blackouts: offer.timeframe.blackouts,
           });
           if (tdate.toList().includes(optInDate)) {
-            offerOptIn(offer.id, optInDate);
+            offerOptIn(offer.id, dateTime);
           } else {
-            dispatch(
-              saveNotification(Model.NOTIFICATION_TYPE.WARNING, t("notification.offerOptIn.name"), t("notification.offerOptIn.title"), t("notification.offerOptIn.message"))
-            );
+            dispatch(saveNotification(Model.NOTIFICATION_TYPE.WARNING, t("notification.offerOptIn.name"), t("notification.offerOptIn.message")));
           }
         } else {
-          offerOptIn(offer.id, optInDate);
+          offerOptIn(offer.id, dateTime);
         }
       } else {
         return offerOptOut(offer.id);
@@ -253,7 +324,7 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
           ) : null}
           <div>
             {currentReservation && !bookingModalState.isEditMode ? (
-              <ReservationDetails reservationInfo={currentReservation.value as Providers.Yelp.ReservationInfo} />
+              <ReservationDetails reservationInfo={currentReservation.value as Providers.Yelp.ReservationInfo} t={t} />
             ) : bookingModalState.poi && bookingModalState.show ? (
               <Booking
                 businessId={bookingModalState.businessId}
@@ -266,6 +337,7 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
                 getHoldIt={yelpGetHoldIt}
                 reservationRequest={memoizedReservationRequest}
                 bookingCallback={memoizedBookingCallback}
+                t={t}
               />
             ) : null}
           </div>
@@ -290,10 +362,14 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
         </div>
       </Modal>
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     yelpReservations,
-    tripReference,
-    user,
+    tripReference?.tripProfile.numberOfAdults,
+    tripReference?.tripProfile.numberOfChildren,
+    user?.firstName,
+    user?.lastName,
+    user?.email,
     bookingModalState.show,
     bookingModalState.isEditMode,
     bookingModalState.poi,
@@ -311,6 +387,117 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
   const cloneTrip = () => {
     setShowCloneModal(true);
   };
+
+  const tourProducts = useCallback(
+    (poi: Model.Poi) => {
+      const tourProviderBookings = poi.bookings.filter((booking: Model.Booking) => window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(booking.providerId));
+
+      let applicableTourProducts: Model.BookingProduct[] = [];
+
+      tourProviderBookings.forEach((booking) => {
+        if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.BOOK_BARBADOS) && booking.providerId === Model.PROVIDER_ID.BOOK_BARBADOS) {
+          // Bookbarbados
+          const bbProducts = booking.products
+            .filter((product) => !product.info.includes(Model.BOOKING_PRODUCT_INFO.TICKET))
+            .filter((product) => bbTourIds.includes(Number(product.id)))
+            .map((product) => ({ ...product, provider: "Bookbarbados" }));
+
+          applicableTourProducts = [...applicableTourProducts, ...bbProducts];
+        }
+        if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.VIATOR) && booking.providerId === Model.PROVIDER_ID.VIATOR) {
+          // Viator
+          const viatorProducts = booking.products
+            .filter((product) => !product.info.includes(Model.BOOKING_PRODUCT_INFO.TICKET))
+            .filter((product) => viatorTourIds.includes(product.id.toString()))
+            .map((product) => ({ ...product, provider: "Viator" }));
+
+          applicableTourProducts = [...applicableTourProducts, ...viatorProducts];
+        }
+        if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.GYG) && booking.providerId === Model.PROVIDER_ID.GYG) {
+          // Gyg
+          const gygProducts = booking.products
+            .filter((product) => !product.info.includes(Model.BOOKING_PRODUCT_INFO.TICKET))
+            .filter((product) => gygTourIds.includes(Number(product.id)))
+            .map((product) => ({ ...product, provider: "GetYourGuide" }));
+
+          applicableTourProducts = [...applicableTourProducts, ...gygProducts];
+        }
+        if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.GOCITY) && booking.providerId === Model.PROVIDER_ID.GOCITY) {
+          // GoCity
+          const goCityProducts = booking.products
+            .filter((product) => !product.info.includes(Model.BOOKING_PRODUCT_INFO.TICKET))
+            .map((product) => ({ ...product, provider: "GoCity" }));
+
+          applicableTourProducts = [...applicableTourProducts, ...goCityProducts];
+        }
+        if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.TORISTY) && booking.providerId === Model.PROVIDER_ID.TORISTY) {
+          // Toristy
+          const toristyProducts = booking.products
+            .filter((product) => !product.info.includes(Model.BOOKING_PRODUCT_INFO.TICKET))
+            .filter((product) => toristyTourIds.includes(product.id.toString()))
+            .map((product) => ({ ...product, provider: "Toristy" }));
+
+          applicableTourProducts = [...applicableTourProducts, ...toristyProducts];
+        }
+      });
+
+      return applicableTourProducts;
+    },
+    [bbTourIds, viatorTourIds, gygTourIds, toristyTourIds]
+  );
+
+  const ticketProducts = useCallback(
+    (poi: Model.Poi) => {
+      const ticketProviderBookings = poi.bookings.filter((booking: Model.Booking) => window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(booking.providerId));
+
+      let applicableTicketProducts: Model.BookingProduct[] = [];
+
+      ticketProviderBookings.forEach((booking) => {
+        if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.BOOK_BARBADOS) && booking.providerId === Model.PROVIDER_ID.BOOK_BARBADOS) {
+          // Bookbarbados
+          const bbTicketProducts = booking.products
+            .filter((product) => product.info.includes(Model.BOOKING_PRODUCT_INFO.TICKET))
+            .filter((product) => bbTourIds.includes(Number(product.id)))
+            .map((product) => ({ ...product, provider: "Bookbarbados" }));
+          applicableTicketProducts = [...applicableTicketProducts, ...bbTicketProducts];
+        }
+        if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.VIATOR) && booking.providerId === Model.PROVIDER_ID.VIATOR) {
+          // Viator
+          const viatorTicketProducts = booking.products
+            .filter((product) => product.info.includes(Model.BOOKING_PRODUCT_INFO.TICKET))
+            .filter((product) => viatorTourIds.includes(product.id.toString()))
+            .map((product) => ({ ...product, provider: "Viator" }));
+          applicableTicketProducts = [...applicableTicketProducts, ...viatorTicketProducts];
+        }
+        if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.GYG) && booking.providerId === Model.PROVIDER_ID.GYG) {
+          // Gyg
+          const gygTicketProducts = booking.products
+            .filter((product) => product.info.includes(Model.BOOKING_PRODUCT_INFO.TICKET))
+            .filter((product) => gygTourIds.includes(Number(product.id)))
+            .map((product) => ({ ...product, provider: "GetYourGuide" }))
+            .reverse();
+          applicableTicketProducts = [...applicableTicketProducts, ...gygTicketProducts];
+        }
+        if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.GOCITY) && booking.providerId === Model.PROVIDER_ID.GOCITY) {
+          // GoCity
+          const goCityTicketProducts = booking.products
+            .filter((product) => product.info.includes(Model.BOOKING_PRODUCT_INFO.TICKET))
+            .map((product) => ({ ...product, provider: "GoCity" }));
+          applicableTicketProducts = [...applicableTicketProducts, ...goCityTicketProducts];
+        }
+        if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.TORISTY) && booking.providerId === Model.PROVIDER_ID.TORISTY) {
+          // Toristy
+          const toristyCityTicketProducts = booking.products
+            .filter((product) => product.info.includes(Model.BOOKING_PRODUCT_INFO.TICKET))
+            .filter((product) => toristyTourIds.includes(product.id.toString()))
+            .map((product) => ({ ...product, provider: "Toristy" }));
+          applicableTicketProducts = [...applicableTicketProducts, ...toristyCityTicketProducts];
+        }
+      });
+      return applicableTicketProducts;
+    },
+    [bbTourIds, viatorTourIds, gygTourIds, toristyTourIds]
+  );
 
   const renderContent = () => {
     if (focus.step) {
@@ -382,9 +569,12 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
             reservationUrl={memoizedCurrentReservationUrl(focus.step.poi.id)}
             hideBookingButton={!window.tconfig.SHOW_RESTAURANT_RESERVATIONS}
             hideTours={!window.tconfig.SHOW_TOURS_AND_TICKETS}
-            getTourInfo={showTourInfoModal}
-            TOUR_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
-            TICKET_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
+            getTourInfo={memoizedGetTourInfo}
+            tourProducts={tourProducts(focus.step.poi)}
+            ticketProducts={ticketProducts(focus.step.poi)}
+            tourTicketProductsLoading={toursLoading}
+            // TOUR_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
+            // TICKET_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
             RESTAURANT_RESERVATION_PROVIDER_IDS={window.tconfig.RESTAURANT_RESERVATION_PROVIDER_IDS}
             myOffers={myAllOffers || []}
             isLoadingOffer={isLoadingOffer}
@@ -402,6 +592,12 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
             }}
             placeInfoCallBack={() => window.open(`${PLACE_INFO.PATH}/${focus.step?.poi.id}`, "_blank")}
             showStepScoreDetails={window.tconfig.SHOW_STEP_SCORE_DETAIL}
+            hideActionButtons={hideActionButtons}
+            hideFavoriteIcon={hideFavoriteIcon}
+            hideScore={hideScore}
+            hidePartOfDay={hidePartOfDay}
+            hideFeatures={hideFeatures}
+            hideCuisine={hideCuisine}
             t={t}
           />
         </div>
@@ -464,10 +660,13 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
             isLoadingOffer={isLoadingOffer}
             offerButtonClick={offerButtonOnChange}
             hideOffers={!window.tconfig.SHOW_OFFERS}
-            TOUR_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
-            TICKET_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
+            tourProducts={tourProducts(focus.alternative.poi)}
+            ticketProducts={ticketProducts(focus.alternative.poi)}
+            tourTicketProductsLoading={toursLoading}
+            // TOUR_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
+            // TICKET_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
             RESTAURANT_RESERVATION_PROVIDER_IDS={window.tconfig.RESTAURANT_RESERVATION_PROVIDER_IDS}
-            getTourInfo={showTourInfoModal}
+            getTourInfo={(productId: string) => {}}
             loadingFeedback={loadingFeedback}
             feedbackSubjects={feedbacks?.poiSubjects || []}
             sendFeedback={(feedback: Model.FeedbackRequest) => {
@@ -480,6 +679,9 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
             }}
             placeInfoCallBack={() => window.open(`${PLACE_INFO.PATH}/${focus.alternative?.poi.id}`, "_blank")}
             redeemClicked={() => history.push(QR_READER.PATH)}
+            hideActionButtons={hideActionButtons}
+            hideFavoriteIcon={hideFavoriteIcon}
+            hideScore={hideScore}
             t={t}
           />
         </div>
@@ -542,10 +744,13 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
             isLoadingOffer={isLoadingOffer}
             offerButtonClick={offerButtonOnChange}
             hideOffers={!window.tconfig.SHOW_OFFERS}
-            TOUR_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
-            TICKET_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
+            tourProducts={tourProducts(focus.poi)}
+            ticketProducts={ticketProducts(focus.poi)}
+            tourTicketProductsLoading={toursLoading}
+            // TOUR_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
+            // TICKET_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
             RESTAURANT_RESERVATION_PROVIDER_IDS={window.tconfig.RESTAURANT_RESERVATION_PROVIDER_IDS}
-            getTourInfo={showTourInfoModal}
+            getTourInfo={memoizedGetTourInfo}
             loadingFeedback={loadingFeedback}
             feedbackSubjects={feedbacks?.poiSubjects || []}
             sendFeedback={(feedback: Model.FeedbackRequest) => {
@@ -558,6 +763,9 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
             }}
             placeInfoCallBack={() => window.open(`${PLACE_INFO.PATH}/${focus.poi?.id}`, "_blank")}
             redeemClicked={() => history.push(QR_READER.PATH)}
+            hideActionButtons={hideActionButtons}
+            hideFavoriteIcon={hideFavoriteIcon}
+            hideScore={hideScore}
             t={t}
           />
         </div>
@@ -632,6 +840,27 @@ const FocusContainer: React.FC<IFocusContainer> = ({ /* show, */ planId, /* focu
               focusLost();
             }}
             dateOfBirth={user?.dateOfBirth}
+            t={t}
+          />
+        </div>
+      );
+    }
+
+    if (focus.providerTour && tripReference) {
+      return (
+        <div className="scrollable-y">
+          <RezdyTourInfo
+            key={`focus_tour_info_${focus.providerTour.latitude}_${focus.providerTour.longitude}`}
+            product={focus.providerTour}
+            onBookingNow={() => {
+              if (focus.providerTour?.name) {
+                const bookingWidgetUrl = `https://365adventures.rezdy.com/calendarWidget/${focus.providerTour.productCode}`;
+                window.open(bookingWidgetUrl);
+              }
+            }}
+            close={() => {
+              focusLost();
+            }}
             t={t}
           />
         </div>

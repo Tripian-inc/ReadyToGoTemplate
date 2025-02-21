@@ -1,0 +1,69 @@
+import React, { useEffect, useState } from "react";
+import { useLocation, useParams } from "react-router";
+import moment from "moment";
+import { Providers } from "@tripian/model";
+import { providers } from "@tripian/core";
+import { PreLoading } from "@tripian/react";
+import GygTourInfo from "../../components/GygTourInfo/GygTourInfo";
+
+const TourInfoPageEx = () => {
+  const [gygTourState, setGygTourState] = useState<Providers.Gyg.Tour | undefined>(undefined);
+
+  // /:id?date=:date&adult=:adult&children=:children
+  const { id } = useParams<{
+    id: string;
+    date: string;
+    adult: string;
+    children: string;
+  }>();
+
+  const useQuery = <T extends { [K in keyof T]?: string } = {}>(): T => {
+    const query = new URLSearchParams(useLocation().search);
+    const result: T = {} as T;
+    query.forEach((val, key) => {
+      result[key] = val;
+    });
+
+    return result;
+  };
+  const { date, adult, child } = useQuery<{
+    date: string | undefined;
+    adult: string | undefined;
+    child: string | undefined;
+  }>();
+
+  useEffect(() => {
+    if (providers.gyg && id) {
+      providers.gyg.tour(id as unknown as number).then((tour: Providers.Gyg.Tour) => {
+        setGygTourState(tour);
+      });
+    }
+    return () => {};
+  }, [id]);
+
+  if (id) {
+    if (gygTourState && providers.gyg) {
+      return (
+        <GygTourInfo
+          tour={gygTourState}
+          date={moment(date)}
+          adult={adult as unknown as number}
+          child={child as unknown as number}
+          apiTourAvailabilities={providers.gyg.tourAvailabilities}
+          apiOptions={providers.gyg.options}
+          apiOptionPricings={providers.gyg.optionPricings}
+          apiOptionAvailabilities={providers.gyg.optionAvailabilities}
+          apiBookingAdd={providers.gyg.bookingAdd}
+          apiPaymentConfiguration={providers.gyg.paymentConfiguration}
+          apiCartAdd={providers.gyg.cartAdd}
+        />
+      );
+    }
+
+    return <PreLoading />;
+  }
+
+  return <div>Tour Id Yok</div>;
+};
+
+export default TourInfoPageEx;

@@ -12,6 +12,8 @@ import classes from "./ToursandTickets.module.scss";
 const emptyToursandTicketsProfile: Model.TourAndTickets = {
   cityId: 0,
   cityName: "",
+  lat: 0,
+  lng: 0,
   arrivalDatetime: moment().add(1, "days").format("YYYY-MM-DD"),
   departureDatetime: moment().add(7, "days").format("YYYY-MM-DD"),
   adult: 1,
@@ -29,12 +31,13 @@ const ToursandTicketsPage = () => {
 
   const history = useHistory();
 
-  const destinations: { destinationId: number; destinationName: string; parentName: string }[] = useMemo(() => {
+  const destinations: { destinationId: number; destinationName: string; coordinate: Model.Coordinate; parentName: string }[] = useMemo(() => {
     if (cities) {
       return cities?.map((city) => {
         const destination = {
           destinationId: city.id,
           destinationName: city.name,
+          coordinate: city.coordinate,
           parentName: city.parentLocations.length === 0 ? city.country.name : `${city.parentLocations.map((parent) => parent.name).join(", ")}, ${city.country.name}`,
         };
 
@@ -74,11 +77,14 @@ const ToursandTicketsPage = () => {
                   setToursAndTicketsProfile={callbackToursandTicketsProfile}
                   onSubmit={() => {
                     history.push(
-                      `${LOCAL_EXPERIENCES.PATH}?city_id=${toursandTicketsProfileProfile.cityId}&city_name=${toursandTicketsProfileProfile.cityName}&start_date=${
-                        toursandTicketsProfileProfile.arrivalDatetime
-                      }&end_date=${toursandTicketsProfileProfile.departureDatetime}&adult=${toursandTicketsProfileProfile.adult}${
-                        toursandTicketsProfileProfile.children ? `&children=${toursandTicketsProfileProfile.children}` : ""
-                      }`
+                      `${LOCAL_EXPERIENCES.PATH}?city_id=${toursandTicketsProfileProfile.cityId}&city_name=${toursandTicketsProfileProfile.cityName}&lat=${
+                        toursandTicketsProfileProfile.lat
+                      }&lng=${toursandTicketsProfileProfile.lng}&start_date=${toursandTicketsProfileProfile.arrivalDatetime}&end_date=${
+                        toursandTicketsProfileProfile.departureDatetime
+                      }&adult=${toursandTicketsProfileProfile.adult}${toursandTicketsProfileProfile.children ? `&children=${toursandTicketsProfileProfile.children}` : ""}`,
+                      {
+                        customState: TOURS_AND_TICKETS.PATH,
+                      }
                     );
                   }}
                   onCancel={() => history.goBack()}

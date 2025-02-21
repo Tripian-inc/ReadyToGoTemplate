@@ -1,23 +1,31 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { /* useDispatch, */ useSelector } from "react-redux";
 import Model from "@tripian/model";
 import { api } from "@tripian/core";
 import { SearchThisArea } from "@tripian/react";
 import ICombinedState from "../../../../../redux/model/ICombinedState";
 /* import { changeSearchThisArea } from '../../../../../redux/action/trip'; */
-import classes from "./MapSearch.module.scss";
 import useTranslate from "../../../../../hooks/useTranslate";
+import { useParams } from "react-router";
+import classes from "./MapSearch.module.scss";
 
 interface IMapSearch {
   show: boolean;
-  poiCategories: Model.PoiCategory[];
+  poiCategoryGroups: Model.PoiCategoryGroup[];
   setSearchThisAreaPois: (pois: Model.Poi[]) => void;
 }
 
-const MapSearch: React.FC<IMapSearch> = ({ show, poiCategories, setSearchThisAreaPois }) => {
+const MapSearch: React.FC<IMapSearch> = ({ show, poiCategoryGroups, setSearchThisAreaPois }) => {
   // const dispatch = useDispatch();
 
   const zoom = useSelector((state: ICombinedState) => state.gmap.zoomState);
+
+  const { hashParam } = useParams<{ hashParam: string }>();
+
+  const shared = useMemo(() => {
+    const params = hashParam.split("!");
+    return params.length > 1 && hashParam.split("!")[1] === "s";
+  }, [hashParam]);
 
   const { t } = useTranslate();
 
@@ -34,6 +42,7 @@ const MapSearch: React.FC<IMapSearch> = ({ show, poiCategories, setSearchThisAre
       poiCategories: categoryIds.join(","),
       // coordinate: { lat: centerLat, lng: centerLng },
       // distance: 2,
+      showOffersOnly: shared ? false : true,
       bounds: tripianBounds.join(","),
       limit: 100,
     });
@@ -44,7 +53,7 @@ const MapSearch: React.FC<IMapSearch> = ({ show, poiCategories, setSearchThisAre
   return (
     <div className={mapSearchClasses.join(" ")}>
       <SearchThisArea
-        /* categoryList={poiCategories} */
+        categoryGroups={poiCategoryGroups}
         searchPoi={search}
         searchPoiCallBack={setSearchThisAreaPois}
         hide={zoom < 13}

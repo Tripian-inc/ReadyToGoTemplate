@@ -86,10 +86,10 @@ const GygTourInfoForm: React.FC<IGygTourInfoForm> = ({
                 <div className={classes.gygTourInfoListItemWrapper}>
                   {formPersonsCategories
                     // .filter((x) => x.addon === false)
-                    .map((formPersonsCategory) => {
+                    .map((formPersonsCategory, i) => {
                       const count: number = personsCategories.find((x) => x.ticket_category === formPersonsCategory.ticket_category)?.count ?? 0;
                       return (
-                        <li key={formPersonsCategory.name} className={classes.gygTourInfoFormListItem}>
+                        <li key={`${formPersonsCategory.name}-${i}`} className={classes.gygTourInfoFormListItem}>
                           <div>
                             <h4 className={classes.gygTourInfoPersonCountText}>
                               <div>{formPersonsCategory.name}</div>
@@ -136,7 +136,11 @@ const GygTourInfoForm: React.FC<IGygTourInfoForm> = ({
                 tabIndex={0}
                 className={classes.gygTourInfoPeopleButton}
               >
-                Select Participants
+                {personsCategories
+                  .filter((category) => category.count > 0)
+                  .map((category, index) => {
+                    return category.count + " " + category.name + (index + 1 === personsCategories.filter((category) => category.count > 0).length ? "" : ",");
+                  })}
               </div>
             </CustomPopover>
           </ul>
@@ -147,7 +151,7 @@ const GygTourInfoForm: React.FC<IGygTourInfoForm> = ({
                 checkAvailabilityOnClick();
                 setClicked(true);
               }}
-              text="Check Availability"
+              text={t("trips.myTrips.localExperiences.tourDetails.checkAvailability")}
             />
           )}
         </>

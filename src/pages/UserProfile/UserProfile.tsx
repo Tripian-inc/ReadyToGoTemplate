@@ -123,7 +123,7 @@ const UserProfile = () => {
               )}
 
               <div className="text-center my-3">
-                <Button color="primary" text="Delete User" onClick={() => history.push(DELETE_USER.PATH)} />
+                <Button color="primary" text={t("user.deleteUser.deleteBtn")} onClick={() => history.push(DELETE_USER.PATH)} />
               </div>
             </div>
           </div>

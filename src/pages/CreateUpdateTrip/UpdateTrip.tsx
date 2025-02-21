@@ -32,8 +32,26 @@ const UpdateTripPage = () => {
   const { hashParam } = useParams<{ hashParam: string }>();
   const hash = useMemo(() => hashParam.split("!")[0], [hashParam]);
   const history = useHistory();
+  const { user } = useUser();
 
   document.title = UPDATE_TRIP.TITLE(t("trips.updateTrip.header"));
+
+  const updateUserAnswers = (tripProfileAnswers: number[]): number[] => {
+    const validUserAnswers = [1, 2, 41];
+    let updatedAnswers = [...tripProfileAnswers];
+
+    updatedAnswers = updatedAnswers.filter((answer) => !validUserAnswers.includes(answer));
+
+    if (user && user.answers) {
+      user.answers.forEach((userAnswer) => {
+        if (validUserAnswers.includes(userAnswer) && !updatedAnswers.includes(userAnswer)) {
+          updatedAnswers.push(userAnswer);
+        }
+      });
+    }
+
+    return updatedAnswers;
+  };
 
   useEffect(() => {
     let unmonted = false;
@@ -66,7 +84,6 @@ const UpdateTripPage = () => {
         });
       }
     }
-
     return () => {
       unmonted = true;
     };
@@ -116,6 +133,10 @@ const UpdateTripPage = () => {
     if (tripProfileFormData) {
       const newTripProfileFormData = { ...tripProfileFormData };
       newTripProfileFormData.doNotGenerate = doNotGenerate;
+
+      if (user && user.answers) {
+        newTripProfileFormData.answers = updateUserAnswers(newTripProfileFormData.answers);
+      }
 
       tripUpdate(hash, newTripProfileFormData).then((trip: Model.Trip) => {
         tripFetchCallback(trip);

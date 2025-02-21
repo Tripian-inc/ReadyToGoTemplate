@@ -65,9 +65,9 @@ export const changeLoadingCompanions = (loading: boolean): IAction => ({
  * Notifications
  *
  */
-export const saveNotification = (type: Model.NOTIFICATION_TYPE, functionName: string, title: string, message: string, closeMs: number = 3500, hide = false): IAction => ({
+export const saveNotification = (type: Model.NOTIFICATION_TYPE, functionName: string, message: string, closeMs: number = 3500, hide = false): IAction => ({
   type: USER_ACTIONS.SAVE_NOTIFICATION,
-  payload: { type, functionName, title, message, closeMs, hide },
+  payload: { type, functionName, message, closeMs, hide },
 });
 
 export const hideNotification = (id: number): IAction => ({

@@ -126,7 +126,6 @@ const tripReducer: Reducer<ITripState, IAction> = (state: ITripState = initialTr
             id: state.notifications.length + 1,
             type: action.payload.type,
             functionName: action.payload.functionName,
-            title: action.payload.title,
             message: action.payload.message,
             closeMs: action.payload.closeMs,
             hide: action.payload.hide,

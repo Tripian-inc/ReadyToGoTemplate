@@ -8,8 +8,8 @@ import { CAMPAIGN_OFFERS, PLACE_INFO, QR_READER } from "../../constants/ROUTER_P
 import useSearchOffer from "../../hooks/useSearchOffer";
 import useMyOffers from "../../hooks/useMyOffers";
 import AppNav from "../../App/AppNav/AppNav";
-import classes from "./CampaignOffersPage.module.scss";
 import useTranslate from "../../hooks/useTranslate";
+import classes from "./CampaignOffersPage.module.scss";
 
 const CampaignOffersPage = () => {
   const [loadingCampaign, setLoadingCampaign] = useState<boolean>(true);
@@ -30,7 +30,6 @@ const CampaignOffersPage = () => {
   const { t } = useTranslate();
 
   document.title = CAMPAIGN_OFFERS.TITLE(t("trips.myTrips.itinerary.offers.campaignOffers.title"));
-
   useEffect(() => {
     setLoadingCampaign(true);
     api
@@ -82,10 +81,21 @@ const CampaignOffersPage = () => {
   const offerCardClicked = useCallback(
     (optIn: boolean, id: number, optInDate?: string) => {
       if (campaign === undefined) return;
-      if (optIn) {
-        const dayFormatted = moment(optInDate || campaign.timeframe.start).format("YYYY-MM-DD");
+      const timezone = moment.tz.zone(campaign.timezone) ? campaign.timezone : "UTC";
 
-        offerOptIn(id, dayFormatted).then(() => {
+      if (optIn) {
+        const baseDate = moment(optInDate || campaign?.timeframe?.start);
+        const currentTime = moment();
+        const dateTime = baseDate
+          .set({
+            hour: currentTime.hour(),
+            minute: currentTime.minute(),
+            second: currentTime.second(),
+          })
+          .tz(timezone)
+          .format("YYYY-MM-DD HH:mm:ss");
+
+        offerOptIn(id, dateTime).then(() => {
           fetchCampaignOffers();
         });
       } else {
@@ -99,50 +109,51 @@ const CampaignOffersPage = () => {
 
   return (
     <>
-      <AppNav header={CAMPAIGN_OFFERS.HEADER?.(t("trips.myTrips.itinerary.offers.title"))} />
+      <AppNav header={CAMPAIGN_OFFERS.HEADER?.(t("trips.myTrips.itinerary.offers.campaignOffers.title"))} />
       {loadingCampaign || loadingOffers ? (
         <PreLoading />
       ) : (
         <div className={classes.campaignOffers}>
-          <div className="w-full ml-4 mt-4 z-10">
-            <BackButton text="Go Back to My Wallet" clicked={() => history.goBack()} />
-          </div>
-          <div className={classes.offerTabs}>
-            <Button
-              className={`${classes.offerTabButton} ${tab === Model.PRODUCT_TYPE_NAME.EXPERIENCES ? classes.selected : classes.unSelected}`}
-              text={t("trips.myTrips.itinerary.offers.categories.experiences")}
-              onClick={() => {
-                if (tab === Model.PRODUCT_TYPE_NAME.EXPERIENCES) {
-                  setTab(undefined);
-                } else {
-                  setTab(Model.PRODUCT_TYPE_NAME.EXPERIENCES);
-                }
-              }}
-            />
-            <Button
-              className={`${classes.offerTabButton} ${tab === Model.PRODUCT_TYPE_NAME.DINING ? classes.selected : classes.unSelected}`}
-              text={t("trips.myTrips.itinerary.offers.categories.dining")}
-              onClick={() => {
-                if (tab === Model.PRODUCT_TYPE_NAME.DINING) {
-                  setTab(undefined);
-                } else {
-                  setTab(Model.PRODUCT_TYPE_NAME.DINING);
-                }
-              }}
-            />
-            <Button
-              className={`${classes.offerTabButton} ${tab === Model.PRODUCT_TYPE_NAME.SHOPPING ? classes.selected : classes.unSelected}`}
-              text={t("trips.myTrips.itinerary.offers.categories.shopping")}
-              onClick={() => {
-                if (tab === Model.PRODUCT_TYPE_NAME.SHOPPING) {
-                  setTab(undefined);
-                } else {
-                  setTab(Model.PRODUCT_TYPE_NAME.SHOPPING);
-                }
-              }}
-            />
-          </div>
-          {/* <TabMenu
+          <div className={classes.campaignOffersContent}>
+            <div className="w-full ml-4 mt-4 z-10">
+              <BackButton text="Go Back to My Wallet" clicked={() => history.goBack()} />
+            </div>
+            <div className={classes.offerTabs}>
+              <Button
+                className={`${classes.offerTabButton} ${tab === Model.PRODUCT_TYPE_NAME.EXPERIENCES ? classes.selected : classes.unSelected}`}
+                text={t("trips.myTrips.itinerary.offers.categories.experiences")}
+                onClick={() => {
+                  if (tab === Model.PRODUCT_TYPE_NAME.EXPERIENCES) {
+                    setTab(undefined);
+                  } else {
+                    setTab(Model.PRODUCT_TYPE_NAME.EXPERIENCES);
+                  }
+                }}
+              />
+              <Button
+                className={`${classes.offerTabButton} ${tab === Model.PRODUCT_TYPE_NAME.DINING ? classes.selected : classes.unSelected}`}
+                text={t("trips.myTrips.itinerary.offers.categories.dining")}
+                onClick={() => {
+                  if (tab === Model.PRODUCT_TYPE_NAME.DINING) {
+                    setTab(undefined);
+                  } else {
+                    setTab(Model.PRODUCT_TYPE_NAME.DINING);
+                  }
+                }}
+              />
+              <Button
+                className={`${classes.offerTabButton} ${tab === Model.PRODUCT_TYPE_NAME.SHOPPING ? classes.selected : classes.unSelected}`}
+                text={t("trips.myTrips.itinerary.offers.categories.shopping")}
+                onClick={() => {
+                  if (tab === Model.PRODUCT_TYPE_NAME.SHOPPING) {
+                    setTab(undefined);
+                  } else {
+                    setTab(Model.PRODUCT_TYPE_NAME.SHOPPING);
+                  }
+                }}
+              />
+            </div>
+            {/* <TabMenu
             menuItems={[
               {
                 title: "Experiences",
@@ -166,26 +177,27 @@ const CampaignOffersPage = () => {
             selectedIndex={tab === Model.PRODUCT_TYPE_NAME.EXPERIENCES ? 0 : tab === Model.PRODUCT_TYPE_NAME.DINING ? 1 : 2}
           /> */}
 
-          <div className={classes.offer}>
-            {displayOfferPois?.length === 0 && <h3 className="center mt10">{t("trips.myTrips.itinerary.offers.emptyOffersMessage")}</h3>}
-            {displayOfferPois?.map((campaignOfferPoi) => {
-              return campaignOfferPoi.offers.map((offer) => (
-                <OfferCard
-                  key={offer.id}
-                  redeemClicked={() => history.push(QR_READER.PATH)}
-                  optClicked={offerCardClicked}
-                  cardClicked={() => window.open(`${PLACE_INFO.PATH}/${campaignOfferPoi.id}`, "_blank")}
-                  poiName={campaignOfferPoi.name}
-                  planDate={offer.campaign?.timeframe.start}
-                  /* planDate={moment().add(2, "day").toString()} */
-                  offer={offer}
-                  isLoadingOffer={isLoadingOffer}
-                  optedIn={offer.optInDate !== null}
-                />
-              ));
-            })}
+            <div className={classes.offer}>
+              {displayOfferPois?.length === 0 && <h3 className="center mt10">{t("trips.myTrips.itinerary.offers.emptyOffersMessage")}</h3>}
+              {displayOfferPois?.map((campaignOfferPoi) => {
+                return campaignOfferPoi.offers.map((offer) => (
+                  <OfferCard
+                    key={offer.id}
+                    redeemClicked={() => history.push(QR_READER.PATH)}
+                    optClicked={offerCardClicked}
+                    cardClicked={() => window.open(`${PLACE_INFO.PATH}/${campaignOfferPoi.id}`, "_blank")}
+                    poiName={campaignOfferPoi.name}
+                    planDate={offer.campaign?.timeframe.start}
+                    /* planDate={moment().add(2, "day").toString()} */
+                    offer={offer}
+                    isLoadingOffer={isLoadingOffer}
+                    optedIn={offer.optInDate !== null}
+                  />
+                ));
+              })}
+            </div>
+            {window.tconfig.BRAND_NAME === "bookbarbados" && <div className={classes.backgroundImage} />}
           </div>
-          {window.tconfig.BRAND_NAME === "bookbarbados" && <div className={classes.backgroundImage} />}
         </div>
       )}
     </>

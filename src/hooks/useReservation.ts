@@ -1,40 +1,43 @@
 import { useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import moment from "moment";
 import Model, { helper, Providers } from "@tripian/model";
 import { api, providers } from "@tripian/core";
 
 import ICombinedState from "../redux/model/ICombinedState";
-import { saveNotification, changeLoadingReservations, changeReservations } from "../redux/action/trip";
+import { saveNotification } from "../redux/action/trip";
 
 const useReservation = (cityIdParam?: number) => {
   const [loadingReservation, setLoadingReservation] = useState<boolean>(false);
-  const { cityId, reservations, loadingReservations, readOnlyTrip } = useSelector((state: ICombinedState) => ({
+  const [reservations, setReservations] = useState<Model.UserReservation[] | undefined>();
+  const [loadingReservations, setLoadingReservations] = useState<boolean>(false);
+  const [viatorStatusCheckInProgress, setViatorStatusCheckInProgress] = useState(false);
+  const { cityId, /* reservations, loadingReservations,*/ readOnlyTrip } = useSelector((state: ICombinedState) => ({
     cityId: state.trip.reference?.city.id,
-    reservations: state.trip.reservations,
-    loadingReservations: state.trip.loading.reservations,
+    // reservations: state.trip.reservations,
+    // loadingReservations: state.trip.loading.reservations,
     readOnlyTrip: state.trip.readOnly,
   }));
   const dispatch = useDispatch();
 
   const yelpReservations = useMemo(() => reservations?.filter((rs) => rs.provider === Model.PROVIDER_NAME.YELP), [reservations]);
   const gygReservations = useMemo(() => reservations?.filter((rs) => rs.provider === Model.PROVIDER_NAME.GYG), [reservations]);
+  const viatorReservations = useMemo(() => reservations?.filter((rs) => rs.provider === Model.PROVIDER_NAME.VIATOR), [reservations]);
 
   const reservationsFetch = useCallback((): Promise<Model.UserReservation[]> => {
-    if (cityId === undefined || readOnlyTrip === true) {
+    if (readOnlyTrip === true) {
       // eslint-disable-next-line no-console
-      console.warn("reservationsFetch called with undefined cityId");
+      console.warn("reservationsFetch called with readOnlyTrip");
       return Promise.resolve([]);
     }
-    dispatch(changeLoadingReservations(true));
+    // dispatch(changeLoadingReservations(true));
+    setLoadingReservations(true);
 
     return api
-      .reservations(cityId, undefined, undefined, undefined, moment().subtract(1, "days").format("YYYY-MM-DD"))
-      .then(
-        (userReservations: Model.UserReservation[]) =>
-          // dispatch(changeReservations(userReservations));
-          userReservations
-      )
+      .reservations()
+      .then((userReservations: Model.UserReservation[]) => {
+        // dispatch(changeReservations(userReservations));
+        return userReservations;
+      })
 
       .catch((reservationsFetchError) => {
         dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "reservationsFetch", "Fetch Reservations", reservationsFetchError));
@@ -43,7 +46,7 @@ const useReservation = (cityIdParam?: number) => {
     // .finally(() => {
     //   dispatch(changeLoadingReservations(false));
     // });
-  }, [cityId, dispatch, readOnlyTrip]);
+  }, [dispatch, readOnlyTrip]);
 
   const reservationAdd = useCallback(
     async (reservationRequest: Model.UserReservationRequest, showLoading = true): Promise<Model.UserReservation[]> => {
@@ -52,10 +55,11 @@ const useReservation = (cityIdParam?: number) => {
       try {
         try {
           const newUserReservations = await api.combo.reservationAdd(reservationRequest, cityId || cityIdParam || 0);
-          dispatch(changeReservations(newUserReservations));
+          // dispatch(changeReservations(newUserReservations));
+          setReservations(newUserReservations);
           return newUserReservations;
         } catch (reservationAddError) {
-          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "reservationAdd", "Add Reservation", reservationAddError as string));
+          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "reservationAdd", reservationAddError as string));
           throw reservationAddError;
         }
       } finally {
@@ -72,7 +76,8 @@ const useReservation = (cityIdParam?: number) => {
       return api.combo
         .reservationUpdate(reservation, cityId || 0)
         .then((newUserReservations: Model.UserReservation[]) => {
-          if (save) dispatch(changeReservations(newUserReservations));
+          // if (save) dispatch(changeReservations(newUserReservations));
+          if (save) setReservations(newUserReservations);
           return newUserReservations;
         })
 
@@ -94,10 +99,11 @@ const useReservation = (cityIdParam?: number) => {
       try {
         try {
           const newReservations = await api.combo.reservationDelete(reservationId, cityId || 0);
-          if (save) dispatch(changeReservations(newReservations));
+          // if (save) dispatch(changeReservations(newReservations));
+          if (save) setReservations(newReservations);
           return newReservations;
         } catch (reservationDeleteError) {
-          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "reservationDelete", "Delete Reservation", reservationDeleteError as string));
+          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "reservationDelete", reservationDeleteError as string));
           throw reservationDeleteError;
         }
       } finally {
@@ -123,6 +129,13 @@ const useReservation = (cityIdParam?: number) => {
         (reservation) =>
           reservation.provider === Model.PROVIDER_NAME.GYG &&
           (reservation.value as Providers.Gyg.TourReservationDetails).data.shopping_cart.shopping_cart_id === Number(reservationId)
+      );
+
+      // tripian viator reservation data
+
+      const currentViatorReservation = viatorReservations?.find(
+        (reservation) =>
+          reservation.provider === Model.PROVIDER_NAME.VIATOR && (reservation.value as Providers.Viator.BookingReservationDetails).items[0].bookingRef === reservationId
       );
 
       if (currentYelpReservation) {
@@ -151,10 +164,30 @@ const useReservation = (cityIdParam?: number) => {
           });
       }
 
+      if (currentViatorReservation) {
+        return providers.viator
+          ?.bookingCancel(reservationId)
+          .then((data) => {
+            if (data.status === "ACCEPTED") {
+              reservationDelete(currentViatorReservation.id);
+              dispatch(saveNotification(Model.NOTIFICATION_TYPE.SUCCESS, "viatorReservationCancel", "Successfully canceled."));
+            }
+            if (data.status === "DECLINED") {
+              dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "viatorReservationCancel", data.reason));
+            }
+          })
+          .catch((viatorReservationDelete) => {
+            dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "viatorReservationCancel", viatorReservationDelete));
+          })
+          .finally(() => {
+            setLoadingReservation(false);
+          });
+      }
+
       return undefined;
     },
 
-    [dispatch, reservationDelete, yelpReservations, gygReservations]
+    [yelpReservations, gygReservations, viatorReservations, reservationDelete, dispatch]
   );
 
   // Manuel edit or cancel in mail or Yelp.com check
@@ -201,28 +234,83 @@ const useReservation = (cityIdParam?: number) => {
           }
         });
       } catch (error) {
-        dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "reservationStatus", "Reservation status error", error ? (error as string) : ""));
+        dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "reservationStatus", error ? (error as string) : ""));
       }
     },
     [dispatch, reservationDelete, reservationUpdate]
   );
 
-  const initReservations = () => {
-    if (reservations === undefined && loadingReservations === false && cityId !== undefined) {
-      reservationsFetch().then((apiReservationData: Model.UserReservation[]) => {
-        const apiYelpReservationData: Model.UserReservation[] = apiReservationData?.filter((rs) => rs.provider === Model.PROVIDER_NAME.YELP);
+  const viatorReservationStatusCheck = useCallback(
+    async (apiReservations: Model.UserReservation[]) => {
+      if (viatorStatusCheckInProgress) return;
 
-        if (apiYelpReservationData.length > 0) {
-          yelpReservationStatusCheck(apiReservationData).then(() => {
+      setViatorStatusCheckInProgress(true);
+
+      const pendingViatorReservations = apiReservations.filter(
+        (rs) => rs.provider === Model.PROVIDER_NAME.VIATOR && (rs.value as Providers.Viator.BookingReservationDetails).items[0].status === "PENDING"
+      );
+
+      if (pendingViatorReservations.length === 0) {
+        setViatorStatusCheckInProgress(false);
+        return;
+      }
+
+      const reservationStatusPromises = pendingViatorReservations.map((reservation) => {
+        const reservationDetails = reservation.value as Providers.Viator.BookingReservationDetails;
+        return providers.viator?.bookingStatus({ bookingRef: reservationDetails.items[0].bookingRef });
+      });
+
+      try {
+        const values = await Promise.all(reservationStatusPromises);
+
+        await Promise.all(
+          values.map((value, index) => {
+            const currentReservation = pendingViatorReservations[index];
+            const currentReservationInfo = currentReservation.value as Providers.Viator.BookingReservationDetails;
+
+            if (value && value.status !== "PENDING" && value.status !== currentReservationInfo.items[0].status) {
+              const updatedReservation = { ...currentReservation };
+              (updatedReservation.value as Providers.Viator.BookingReservationDetails).items[0].status = value.status;
+
+              return reservationUpdate(updatedReservation, true);
+            }
+            return Promise.resolve();
+          })
+        );
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log("error", error);
+        dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "viatorReservationStatusCheck", errorMessage));
+      } finally {
+        setViatorStatusCheckInProgress(false);
+      }
+    },
+    [dispatch, reservationUpdate, viatorStatusCheckInProgress]
+  );
+
+  const initReservations = () => {
+    if (reservations === undefined && loadingReservations === false) {
+      reservationsFetch().then((apiReservationData: Model.UserReservation[]) => {
+        const apiYelpReservationData = apiReservationData.filter((rs) => rs.provider === Model.PROVIDER_NAME.YELP);
+        const apiViatorReservationData = apiReservationData.filter((rs) => rs.provider === Model.PROVIDER_NAME.VIATOR);
+
+        // Step 2: Create status check promises for Yelp and Viator
+        const yelpStatusCheckPromise = apiYelpReservationData.length > 0 ? yelpReservationStatusCheck(apiReservationData) : Promise.resolve();
+        const viatorStatusCheckPromise = apiViatorReservationData.length > 0 && !viatorStatusCheckInProgress ? viatorReservationStatusCheck(apiReservationData) : Promise.resolve();
+
+        // Step 3: Wait for both status checks to complete
+        Promise.all([yelpStatusCheckPromise, viatorStatusCheckPromise])
+          .then(() => {
+            // Step 4: Re-fetch reservations data after status checks
             reservationsFetch().then((statusCheckedReservationData: Model.UserReservation[]) => {
-              dispatch(changeReservations(statusCheckedReservationData));
-              dispatch(changeLoadingReservations(false));
+              setReservations(statusCheckedReservationData);
+              setLoadingReservations(false);
             });
+          })
+          .catch((error) => {
+            console.error("Error checking reservation statuses", error);
+            setLoadingReservations(false);
           });
-        } else {
-          dispatch(changeReservations(apiReservationData));
-          dispatch(changeLoadingReservations(false));
-        }
       });
     }
   };
@@ -233,6 +321,7 @@ const useReservation = (cityIdParam?: number) => {
     loadingReservation,
     yelpReservations,
     gygReservations,
+    viatorReservations,
     reservationsFetch,
     reservationAdd,
     reservationUpdate,

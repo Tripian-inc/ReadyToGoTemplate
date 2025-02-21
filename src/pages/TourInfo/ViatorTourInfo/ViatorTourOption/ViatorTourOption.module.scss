@@ -1,0 +1,184 @@
+@import "../../../../pages/styleConst.scss";
+
+.mainDiv {
+  // border: 2px solid #ccca;
+  cursor: pointer;
+
+  margin-bottom: 1.5rem;
+  position: relative;
+  display: block;
+  border: 2px solid #0071eb;
+  border-radius: 1rem;
+  min-width: unset;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+
+
+  // &:hover {
+  //   border-color: #e54e53;
+  // }
+
+  .optionDiv {
+    margin: 0.75rem 0;
+    font-weight: 700;
+    font-size: 1rem;
+
+    .feeText {
+      margin-top: 0.75rem;
+      color: var(--success-color);
+    }
+  }
+
+  .gygTourOptionHour {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .startingTimesLabel {
+    font-weight: 600;
+    border-top: 1px solid #dcdfe4;
+    padding-top: 0.5rem;
+  }
+
+  .startTime {
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+
+  .timeOptions {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 0.75rem;
+    justify-content: flex-start;
+    margin-bottom: 1rem;
+    // width: calc(100% - 5rem);
+  }
+  
+  .timeOption {
+    background-color: #fff;
+    min-width: 6.25rem;
+    text-align: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #0071eb;
+    color: #0071eb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    &:hover {
+      background-color: #ebeef1;
+    }
+  }
+
+  .timeUnAvailableOption {
+   background-color: #fff;
+   min-width: 6.25rem;
+   text-align: center;
+   padding: 0.5rem 1rem;
+   border-radius: 0.5rem;
+   border: 1px solid #B3B3B3;
+   color: #B3B3B3;
+   background: linear-gradient(to top left, #ffffff calc(50% - 1px), #B3B3B3, #fff calc(50% + 1px))
+  }
+  
+  .selectedTimeOption {
+    background-color: #1a2b49;
+    color: #fff;
+    border: 2px solid #1a2b49;
+    &:hover {
+      background-color: #304c84;
+    }
+  }
+
+  .priceBreakdown {
+    font-weight: bolder;
+    font-size: 1rem;
+    border-top: 1px solid #dcdfe4;
+    padding-top: 0.5rem;
+  }
+
+  .tourOptionHeader {
+    min-width: 2rem;
+  }
+
+  .parameters {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    text-transform: capitalize;
+  }
+
+  .gygTourOptionsBottom {
+    background-color: #ebeef1;
+    border-radius: 0 0 1rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .totalPriceText {
+    font-weight: 500;
+    color: #63687a;
+  }
+
+  .totalPriceDiv {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .gygTourOptionsBottomPrice {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .savingRate {
+    color: var(--success-color);
+    font-weight: bold;
+  }
+
+  .addToCartButton {
+    background-color: transparent !important;
+    color: #0071eb !important;
+    font-weight: 700 !important;
+    font-size: 1rem;
+    border: 1px solid #0071eb;
+    border-radius: 2rem;
+    min-width: 5rem;
+    width: 100%;
+    margin-top: 1rem;
+
+    &:hover {
+      color: black !important;
+      border: 1px solid black;
+    }
+
+    &.disabled {
+      color: #fff;
+      background-color: rgba(var(--background-color-rgb), 0.7);
+      cursor: not-allowed;
+    }
+  }
+
+  .warning {
+    padding: 1rem;
+    font-weight: 600;
+    background-color: #ebeef1;
+    border-radius: 0 0 1rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+  }
+}
+
+@media screen and (min-width: $mobile-view-breakpoint) {
+  // .timeOptions {
+  //   width: calc(100% - 3rem) !important;
+  // }
+}

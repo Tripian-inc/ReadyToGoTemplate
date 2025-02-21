@@ -175,6 +175,7 @@ const LocalExperiences: React.FC<ILocalExperiences> = ({
                                 bodyClicked={(product: Providers.Viator.Product) => {
                                   viatorTourCardClicked(viProduct.productCode);
                                 }}
+                                t={t}
                               />
                             </div>
                           );

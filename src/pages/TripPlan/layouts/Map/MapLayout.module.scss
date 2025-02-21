@@ -23,6 +23,14 @@
   }
 }
 
+.mapCategories {
+  padding: 0.5rem 1rem;
+  position: absolute;
+  top: 0.25rem;
+  left: 3.25rem;
+  width: calc(100% - 5.5rem);
+}
+
 @supports (-webkit-touch-callout: none) {
   .mapContainer {
     .mapLeftTopContainer {

@@ -10,8 +10,8 @@ import { CAMPAIGN_OFFERS, MY_WALLET, PLACE_INFO, QR_READER, QR_WRITER } from "..
 import useSearchOffer from "../../hooks/useSearchOffer";
 import useMyOffers from "../../hooks/useMyOffers";
 import AppNav from "../../App/AppNav/AppNav";
-import classes from "./MyWallet.module.scss";
 import useTranslate from "../../hooks/useTranslate";
+import classes from "./MyWallet.module.scss";
 
 enum CAMPAIGN_OFFER_STATUS {
   OPTED_IN = "Opted-in",
@@ -26,7 +26,7 @@ const MyWalletPage = () => {
   const [tab, setTab] = useState<CAMPAIGN_OFFER_STATUS>(CAMPAIGN_OFFER_STATUS.OPTED_IN);
   const [displayOfferPois, setDisplayOfferPois] = useState<Model.Poi[]>();
 
-  const { searchOfferCampaign } = useSearchOffer();
+  const { myOfferCampaign } = useSearchOffer();
   const { isLoadingOffer, /* myAllOffers, */ offerOptIn, offerOptOut } = useMyOffers();
 
   const history = useHistory();
@@ -40,7 +40,7 @@ const MyWalletPage = () => {
     if (coupons) {
       if (0 < coupons.length) {
         setLoading(true);
-        searchOfferCampaign(coupons[0].id)
+        myOfferCampaign(coupons[0].id)
           .then((pois) => {
             const filteredPois = helper.deepCopy(pois.filter((x) => x.offers.some((y) => y.optInDate !== null || y.redeemDate !== null)));
             filteredPois.forEach((poi) => {
@@ -55,7 +55,7 @@ const MyWalletPage = () => {
         setLoading(false);
       }
     }
-  }, [coupons, searchOfferCampaign]);
+  }, [coupons, myOfferCampaign]);
 
   const fetchCoupons = useCallback(() => {
     api.coupons(1).then((cs) => {
@@ -97,7 +97,17 @@ const MyWalletPage = () => {
     if (coupons === undefined) return;
 
     if (optIn) {
-      offerOptIn(id, moment(optInDate || coupons[0].campaign.timeframe.start).format("YYYY-MM-DD")).then(() => {
+      const baseDate = moment(optInDate || coupons[0].campaign.timeframe.start);
+      const currentTime = moment();
+      const dateTime = baseDate
+        .set({
+          hour: currentTime.hour(),
+          minute: currentTime.minute(),
+          second: currentTime.second(),
+        })
+        .tz(coupons[0].campaign.timezone)
+        .format("YYYY-MM-DD HH:mm:ss");
+      offerOptIn(id, moment(dateTime).format("YYYY-MM-DD")).then(() => {
         fetchCampaignOffers();
       });
     } else {
@@ -182,12 +192,7 @@ const MyWalletPage = () => {
                             history.push(QR_READER.PATH);
                           } else {
                             dispatch(
-                              saveNotification(
-                                Model.NOTIFICATION_TYPE.WARNING,
-                                t("notification.couponValidDateWarning.name"),
-                                t("notification.couponValidDateWarning.title"),
-                                t("notification.couponValidDateWarning.message")
-                              )
+                              saveNotification(Model.NOTIFICATION_TYPE.WARNING, t("notification.couponValidDateWarning.name"), t("notification.couponValidDateWarning.message"))
                             );
                           }
                         }

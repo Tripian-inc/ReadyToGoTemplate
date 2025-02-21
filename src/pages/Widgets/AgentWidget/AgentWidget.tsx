@@ -30,7 +30,7 @@ const AgentWidget = () => {
 
   const { loadingCities, cities } = useCities();
 
-  const { t } = useTranslate();
+  const { t, onSelectedLangCode } = useTranslate();
 
   const preLoading = isLoggedIn === false || loadingCities === true || cities === undefined;
   const [loadingTripAdd, setLoadingTripAdd] = useState<boolean>(false);
@@ -53,6 +53,8 @@ const AgentWidget = () => {
 
   useEffect(() => {
     logout();
+    onSelectedLangCode("en");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logout]);
 
   useEffect(() => {

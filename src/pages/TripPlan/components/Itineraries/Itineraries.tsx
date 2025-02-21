@@ -1,6 +1,6 @@
 /* eslint-disable react/require-default-props */
 
-import React, { FC, useState, useEffect, useMemo, useCallback } from "react";
+import React, { FC, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useHistory, useParams } from "react-router-dom";
 import moment from "moment";
@@ -19,6 +19,7 @@ import useFocus from "../../../../hooks/useFocus";
 import useTranslate from "../../../../hooks/useTranslate";
 import SortableStepList from "../../../../components/SortableStepList/SortableStepList";
 import ShareTripModal from "../../../../components/ShareTripModal/ShareTripModal";
+import ChangeTripNameModal from "../../../../components/ChangeTripNameModal/ChangeTripNameModal";
 import advanture from "./img/adventure.png";
 import artmuseum from "./img/artmuseum.png";
 import cultureHistory from "./img/culture history.png";
@@ -26,8 +27,7 @@ import localNeigborhood from "./img/local neighborhood.png";
 import sightSeeing from "./img/sightseeing.png";
 import food from "./img/food.png";
 // import useUser from "../../../../hooks/useUser";
-import { providers } from "@tripian/core";
-import { LOCAL_EXPERIENCES, UPDATE_TRIP } from "../../../../constants/ROUTER_PATH_TITLE";
+import { CITY_INFO, UPDATE_TRIP } from "../../../../constants/ROUTER_PATH_TITLE";
 import { CloneModal } from "../../../../components/CloneModal/CloneModal";
 import classes from "./Itineraries.module.scss";
 
@@ -95,9 +95,16 @@ interface IItineraries {
   alternativesStepId?: number;
   setAlternativesStepId: (stepId?: number) => void;
   showExplorePlaces: () => void;
-  // showLocalExperiences: () => void;
-  selectedPoiCategoryIndex: (index: number) => void;
+  showLocalExperiences: () => void;
+  selectedPoiCategoryGroup: (poiCategoryGroup: Model.PoiCategoryGroup) => void;
   customPoiModalShow: () => void;
+  selectedPoiCategoryIds: number[];
+  poiCategoryGroups: Model.PoiCategoryGroup[];
+  gygTourIds: number[];
+  bbTourIds: number[];
+  viatorTourIds: string[];
+  toristyTourIds: string[];
+  toursLoading: boolean;
 }
 
 const Itineraries: FC<IItineraries> = ({
@@ -106,19 +113,30 @@ const Itineraries: FC<IItineraries> = ({
   alternativesStepId,
   setAlternativesStepId,
   showExplorePlaces,
-  // showLocalExperiences,
-  selectedPoiCategoryIndex,
+  showLocalExperiences,
+  selectedPoiCategoryGroup,
   customPoiModalShow,
+  selectedPoiCategoryIds,
+  poiCategoryGroups,
+  gygTourIds,
+  bbTourIds,
+  viatorTourIds,
+  toristyTourIds,
+  toursLoading,
 }) => {
   const [showCloneModal, setShowCloneModal] = useState<boolean>(false);
   const [legsOffset, setLegsOffset] = useState<number>(0);
   const [showShareTripModal, setShowShareTripModal] = useState(false);
-  const [shareTripMoalLoading, setShareTripModalLoading] = useState<boolean>(false);
+  const [shareTripModalLoading, setShareTripModalLoading] = useState<boolean>(false);
+
+  const [showEditTripNameModal, setShowEditTripNameModal] = useState(false);
+  const [editTripNameModalLoading, setEditTripNameModalLoading] = useState<boolean>(false);
 
   // const [saveTripLoading, setSaveTripLoading] = useState<boolean>(false);
 
   // const { tripReferencesSaved } = useUser();
-  const { tripReference, tripShare } = useTrip();
+  const { tripReference, tripShare, tripNameUpdate } = useTrip();
+  const scrollRef = useRef<HTMLDivElement>(null); // Use ref to track the element
   const { plans, planUpdateOrders } = usePlan();
   const { stepReplace, stepUpdateTimes, stepDelete } = useStep();
   const { alternatives } = useAlternative();
@@ -137,22 +155,40 @@ const Itineraries: FC<IItineraries> = ({
     return tripDepartureDate < now;
   }, [tripReference?.tripProfile.departureDatetime]);
 
-  const { legs, readOnlyTrip, tripHash, shared } = useSelector((state: ICombinedState) => ({
+  const { legs, readOnlyTrip, tripHash, shared, tripName } = useSelector((state: ICombinedState) => ({
     legs: state.gmap.legs,
     readOnlyTrip: state.trip.readOnly,
     tripHash: state.trip?.reference?.tripHash,
     shared: state.trip.reference?.shared,
+    tripName: state.trip.reference?.tripProfile.tripName,
   }));
 
   const history = useHistory();
   const dispatch = useDispatch();
-  const { dayIndex } = useParams<{ dayIndex: string }>();
+  const { hashParam, dayIndex } = useParams<{ hashParam: string; dayIndex: string }>();
   const dayIndexNumber = isNaN(+dayIndex) ? 0 : +dayIndex;
+
+  const sharedTrip = useMemo(() => {
+    const params = hashParam.split("!");
+    return params.length > 1 && hashParam.split("!")[1] === "s";
+  }, [hashParam]);
 
   useEffect(() => {
     if (tripReference?.tripProfile.accommodation) setLegsOffset(1);
     else setLegsOffset(0);
   }, [tripReference]);
+
+  const memoizedSortedSteps = useMemo(() => {
+    if (selectedPoiCategoryIds.length > 0) {
+      return (
+        plan?.steps
+          .sort((a, b) => a.order - b.order)
+          .filter((step) => step.poi.category.some((category) => selectedPoiCategoryIds.some((selectedPoiCategoryId) => selectedPoiCategoryId === category.id))) || []
+      );
+    }
+
+    return plan?.steps.sort((a, b) => a.order - b.order) || [];
+  }, [plan?.steps, selectedPoiCategoryIds]);
 
   // step current reactions
   const memoizedThumbs = useCallback(
@@ -257,6 +293,40 @@ const Itineraries: FC<IItineraries> = ({
     }
   };
 
+  const tripNameOnchange = (tripNameVal: string, tripHash?: string) => {
+    if (tripReference) {
+      if (tripHash && tripName) {
+        const clonedTripProfile = helper.deepCopy(tripReference.tripProfile);
+        const updatedTripProfile = {
+          ...clonedTripProfile,
+          tripName: tripNameVal,
+        };
+
+        setEditTripNameModalLoading(true);
+        tripNameUpdate(tripHash, updatedTripProfile).finally(() => {
+          setEditTripNameModalLoading(false);
+          setShowEditTripNameModal(false);
+          dispatch(
+            changeReference({
+              ...tripReference,
+              tripProfile: { ...updatedTripProfile },
+            })
+          );
+        });
+      }
+    }
+  };
+
+  const smoothScroll = useCallback(() => {
+    const timer = setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   /* const tripSavedAddRemove = (trihHash: string, add: boolean): Promise<boolean> => {
     setSaveTripLoading(true);
     if (add)
@@ -283,7 +353,7 @@ const Itineraries: FC<IItineraries> = ({
     ) : (
       <>
         {tripReference?.tripProfile.accommodation && legs[0] ? (
-          <div className="ml-4 md:ml-6 py-4">
+          <div className="ml-4 md:ml-6">
             <DirectionInfo
               distance={legs[0].distance.text}
               direction={legs[0].duration.text}
@@ -297,7 +367,7 @@ const Itineraries: FC<IItineraries> = ({
           </div>
         ) : null}
         <SortableStepList
-          steps={plan?.steps.sort((a, b) => a.order - b.order) || []}
+          steps={memoizedSortedSteps}
           callbackSortableStepList={(list) => {
             if (readOnlyTrip) cloneTrip();
             else if (plan) planUpdateOrders(plan.id, list);
@@ -308,6 +378,12 @@ const Itineraries: FC<IItineraries> = ({
           showAlternativesChange={(stepId, show) => {
             setAlternativesStepId(show ? stepId : undefined);
           }}
+          showRemoveReplaceButtons={!(sharedTrip && window.tconfig.WIDGET_THEME_1)}
+          hideScore={sharedTrip && window.tconfig.WIDGET_THEME_1}
+          hideStepsTime={sharedTrip && window.tconfig.WIDGET_THEME_1}
+          hideFeatures={sharedTrip && window.tconfig.WIDGET_THEME_1}
+          hideCuisine={sharedTrip && window.tconfig.WIDGET_THEME_1}
+          isWidget={sharedTrip && window.tconfig.WIDGET_THEME_1}
           alternativePoiCardClicked={(stepId, alternativePoi) => {
             focusAlternative(stepId, alternativePoi);
           }}
@@ -352,6 +428,11 @@ const Itineraries: FC<IItineraries> = ({
           legs={legs}
           legsOffset={legsOffset}
           bookaride={() => windowOpenBookARide(legs[0])}
+          gygTourIds={gygTourIds}
+          bbTourIds={bbTourIds}
+          viatorTourIds={viatorTourIds}
+          toristyTourIds={toristyTourIds}
+          toursLoading={toursLoading}
           t={t}
           /* readOnlyTrip={readOnlyTrip} */
         />
@@ -377,10 +458,6 @@ const Itineraries: FC<IItineraries> = ({
     return null;
   }, [tripReference, focusStep]);
 
-  const memoizedIsMobile = useMemo(() => {
-    return window.matchMedia("(max-width: 768px)").matches;
-  }, []);
-
   const tripArrivalDatetimeMoment = moment(tripReference?.tripProfile.arrivalDatetime).utcOffset(0);
   const tripDepartureDatetimeMoment = moment(tripReference?.tripProfile.departureDatetime).utcOffset(0);
 
@@ -397,34 +474,16 @@ const Itineraries: FC<IItineraries> = ({
     return { latterMonth: latterMonth, formerYear: formerYear };
   }, [tripArrivalDatetimeMoment, tripDepartureDatetimeMoment]);
 
-  const showLocalExperiences = () => {
-    if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.includes(Model.PROVIDER_ID.TRAVELIFY) && providers.travelify && tripReference) {
-      providers.travelify
-        .getTourTicketUrl(
-          tripReference.tripProfile.arrivalDatetime,
-          tripReference.tripProfile.departureDatetime,
-          tripReference.city.coordinate.lat,
-          tripReference.city.coordinate.lng,
-          10
-        )
-        .then((url) => {
-          window.open(url);
-        });
-    } else {
-      const startDate = moment(tripReference?.tripProfile.arrivalDatetime).format("YYYY-MM-DD");
-      const endDate = moment(tripReference?.tripProfile.departureDatetime).format("YYYY-MM-DD");
-      history.push(
-        `${LOCAL_EXPERIENCES.PATH}?city_id=${tripReference?.city.id}&city_name=${tripReference?.city.name}&start_date=${startDate}&end_date=${endDate}&adult=${tripReference?.tripProfile.numberOfAdults}&children=${tripReference?.tripProfile.numberOfChildren}`
-      );
-    }
-  };
-
   const cloneTrip = () => {
     setShowCloneModal(true);
   };
 
   const editTrip = () => {
     history.push(`${UPDATE_TRIP.PATH}/${tripHash}`);
+  };
+
+  const tripNameClicked = () => {
+    setShowEditTripNameModal(true);
   };
 
   return (
@@ -446,8 +505,40 @@ const Itineraries: FC<IItineraries> = ({
             <div className="flex flex-row flex-nowrap">
               <div className="font-medium flex justify-between w-full">
                 <div className="block">
-                  <div className="font-medium text-2xl text-black truncate">{tripReference?.city.name}</div>
-                  {tripReference && (
+                  <div className="flex items-center">
+                    <div
+                      className="relative mr-2 cursor-pointer flex"
+                      data-custom-tooltip={t("cityInfo.clickForMoreInfo")}
+                      data-custom-tooltip-position="top"
+                      onKeyDown={() => {}}
+                      role="button"
+                      tabIndex={0}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        history.push(`${CITY_INFO.PATH}/${tripReference?.city.id}`);
+                      }}
+                    >
+                      <SvgIcons.Info size="1.25rem" fill="#000" />
+                    </div>
+                    {tripReference?.tripProfile.tripName ? (
+                      <div
+                        className="font-medium text-2xl text-black truncate flex items-center gap-2"
+                        onKeyDown={() => {}}
+                        role="button"
+                        tabIndex={0}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          tripNameClicked();
+                        }}
+                      >
+                        {tripName}
+                        <SvgIcons.Edit size="1rem" fill="#000" />
+                      </div>
+                    ) : (
+                      <div className="font-medium text-2xl text-black truncate">{tripReference?.city.name}</div>
+                    )}
+                  </div>
+                  {tripReference && !(sharedTrip && window.tconfig.WIDGET_THEME_1) && (
                     <div className="text-s text-gray-600">
                       {tripArrivalDatetimeMoment.format("MMMM DD")} {areMonths_YearsDifferent.formerYear} - {areMonths_YearsDifferent.latterMonth}{" "}
                       {tripDepartureDatetimeMoment.format("DD")}, {tripDepartureDatetimeMoment.format("YYYY")}
@@ -455,93 +546,95 @@ const Itineraries: FC<IItineraries> = ({
                   )}
                 </div>
 
-                <div className="flex flex-row flex-nowrap">
-                  <div className="border border-solid border-primary-color rounded-full flex items-center justify-center w-10 h-10 cursor-pointer mr-3" onClick={editTrip}>
-                    <SvgIcons.Edit size="1.25rem" fill="var(--primary-color)" />
-                  </div>
-                  {readOnlyTrip ? (
-                    <div className="border border-solid border-primary-color rounded-full flex items-center justify-center w-10 h-10 cursor-pointer mr-3" onClick={cloneTrip}>
-                      <SvgIcons.Bookmark size="1.25rem" fill="var(--primary-color)" />
+                {!(sharedTrip && window.tconfig.WIDGET_THEME_1) && (
+                  <div className="flex flex-row flex-nowrap">
+                    <div className="border border-solid border-primary-color rounded-full flex items-center justify-center w-10 h-10 cursor-pointer mr-3" onClick={editTrip}>
+                      <SvgIcons.Edit size="1.25rem" fill="var(--primary-color)" />
                     </div>
-                  ) : (
-                    <>
-                      {window.tconfig.SHARED_TRIP && (
-                        <div
-                          className="border border-solid border-primary-color rounded-full flex items-center justify-center w-10 h-10 cursor-pointer"
-                          onClick={() => setShowShareTripModal(true)}
-                        >
-                          <SvgIcons.Share size="1.25rem" fill="var(--primary-color)" className="primary-color" />
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
+                    {readOnlyTrip ? (
+                      <div className="border border-solid border-primary-color rounded-full flex items-center justify-center w-10 h-10 cursor-pointer mr-3" onClick={cloneTrip}>
+                        <SvgIcons.Bookmark size="1.25rem" fill="var(--primary-color)" />
+                      </div>
+                    ) : (
+                      <>
+                        {window.tconfig.SHARED_TRIP && (
+                          <div
+                            className="border border-solid border-primary-color rounded-full flex items-center justify-center w-10 h-10 cursor-pointer"
+                            onClick={() => setShowShareTripModal(true)}
+                          >
+                            <SvgIcons.Share size="1.25rem" fill="var(--primary-color)" className="primary-color" />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            {!pastTrip && (
+            {!pastTrip && !(sharedTrip && window.tconfig.WIDGET_THEME_1) && (
               <>
-                <div className="my-4 font-medium text-lg">{t("trips.myTrips.localExperiences.title")}</div>
+                <div className="my-4 font-medium text-lg text-[#434b55]">{t("trips.myTrips.localExperiences.title")}</div>
                 <div className="mt-4">
-                  <ItineraryCardSlider slidesPerView={memoizedIsMobile ? 2 : 3}>
+                  <ItineraryCardSlider>
                     <div
-                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer min-w-[10rem]"
+                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer object-cover"
                       onClick={() => showLocalExperiences()}
-                      key="advanture"
+                      key="adventure"
                     >
-                      <img className="object-cover" src={advanture} alt="" />
-                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)]">
+                      <img className="object-cover h-24 w-full" src={advanture} alt="" />
+                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)] text-sm">
                         {t("trips.myTrips.localExperiences.categories.adventure")}
                       </div>
                     </div>
                     <div
-                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer min-w-[10rem]"
+                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer object-cover"
                       onClick={() => showLocalExperiences()}
                       key="food"
                     >
-                      <img className="object-cover" src={food} alt="" />
-                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)]">
+                      <img className="object-cover h-24 w-full" src={food} alt="" />
+                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)] text-sm">
                         {t("trips.myTrips.localExperiences.categories.food")}
                       </div>
                     </div>
                     <div
-                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer min-w-[10rem]"
+                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer object-cover"
                       onClick={() => showLocalExperiences()}
                       key="cultureHistory"
                     >
-                      <img className="object-cover" src={cultureHistory} alt="" />
-                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)]">
+                      <img className="object-cover h-24 w-full" src={cultureHistory} alt="" />
+                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)] text-sm">
                         {t("trips.myTrips.localExperiences.categories.cultureHistory")}
                       </div>
                     </div>
                     <div
-                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer min-w-[10rem]"
+                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer object-cover"
                       onClick={() => showLocalExperiences()}
                       key="sightSeeing"
                     >
-                      <img className="object-cover" src={sightSeeing} alt="" />
-                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)]">
+                      <img className="object-cover h-24 w-full" src={sightSeeing} alt="" />
+                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)] text-sm">
                         {t("trips.myTrips.localExperiences.categories.sightSeeing")}
                       </div>
                     </div>
                     <div
-                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer min-w-[10rem]"
+                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer object-cover"
                       onClick={() => showLocalExperiences()}
                       key="artmuseum"
                     >
-                      <img className="object-cover" src={artmuseum} alt="" />
-                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)]">
+                      <img className="object-cover h-24 w-full" src={artmuseum} alt="" />
+                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)] text-sm">
                         {t("trips.myTrips.localExperiences.categories.artMuseum")}
                       </div>
                     </div>
 
                     <div
-                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer min-w-[10rem]"
+                      className="bg-background-color rounded-xl my-0 w-max-100 relative overflow-hidden h-24 flex items-center justify-center text-text-primary-color font-medium cursor-pointer object-cover"
                       onClick={() => showLocalExperiences()}
                       key="localNeigborhood"
                     >
-                      <img className="object-cover" src={localNeigborhood} alt="" />
-                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)]">
+                      <img className="object-cover h-24 w-full" src={localNeigborhood} alt="" />
+                      <div className="absolute font-semibold opacity-90 center text-white drop-shadow-[1px_1px_1px_rgb(0,0,0)] text-sm">
                         {t("trips.myTrips.localExperiences.categories.localNeighborhood")}
                       </div>
                     </div>
@@ -550,100 +643,102 @@ const Itineraries: FC<IItineraries> = ({
               </>
             )}
           </div>
-          <div className="my-4 px-6">
-            <div className="my-4 font-medium text-lg">{t("trips.myTrips.exploreMore.title")}</div>
-            <div className="py-1">
-              {/* <div className="hs-tooltip inline-block [--trigger:click]">
-                <a className="hs-tooltip-toggle block text-center" href="javascript:;">
-                  <span className="w-10 h-10 inline-flex justify-center items-center gap-2 rounded-md bg-gray-50 border border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-white/[.05] dark:hover:border-white/[.1] dark:hover:text-white">
-                    <svg className="w-2.5 h-2.5" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path
-                        d="M2.27921 10.64L7.92565 4.99357C8.12091 4.79831 8.4375 4.79831 8.63276 4.99357L14.2792 10.64"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  </span>
+          {!(sharedTrip && window.tconfig.WIDGET_THEME_1) && (
+            <div className="my-4 px-6">
+              <div className="my-4 font-medium text-lg">{t("trips.myTrips.exploreMore.title")}</div>
+              <div className="py-1">
+                {/* <div className="hs-tooltip inline-block [--trigger:click]">
+              <a className="hs-tooltip-toggle block text-center" href="javascript:;">
+                <span className="w-10 h-10 inline-flex justify-center items-center gap-2 rounded-md bg-gray-50 border border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-white/[.05] dark:hover:border-white/[.1] dark:hover:text-white">
+                  <svg className="w-2.5 h-2.5" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path
+                      d="M2.27921 10.64L7.92565 4.99357C8.12091 4.79831 8.4375 4.79831 8.63276 4.99357L14.2792 10.64"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+                <div
+                  className="hs-tooltip-content hs-tooltip-shown:opacity-100 hs-tooltip-shown:visible opacity-0 transition-opacity inline-block absolute invisible z-10 py-3 px-4 bg-white border text-sm text-gray-600 rounded-md shadow-md dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400"
+                  role="tooltip"
+                >
+                  Top popover
+                </div>
+              </a>
+            </div> */}
+                <CustomSlider scrollSize={150}>
+                  {poiCategoryGroups.map((categoryGroup, i) => (
+                    <div
+                      key={i}
+                      className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
+                      onClick={() => {
+                        showExplorePlaces();
+                        selectedPoiCategoryGroup(categoryGroup);
+                      }}
+                    >
+                      {categoryGroup.name}
+                    </div>
+                  ))}
+                </CustomSlider>
+                {/* <CustomSlider scrollSize={150}>
                   <div
-                    className="hs-tooltip-content hs-tooltip-shown:opacity-100 hs-tooltip-shown:visible opacity-0 transition-opacity inline-block absolute invisible z-10 py-3 px-4 bg-white border text-sm text-gray-600 rounded-md shadow-md dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400"
-                    role="tooltip"
-                  >
-                    Top popover
-                  </div>
-                </a>
-              </div> */}
-              <CustomSlider scrollSize={150}>
-                <div
-                  className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
-                  onClick={() => {
-                    showExplorePlaces();
-                    selectedPoiCategoryIndex(0);
-                  }}
-                >
-                  <SvgIcons.Attraction size="20px" className="mr-3" fill="black" />
-                  {t("trips.myTrips.exploreMore.categories.attractions")}
-                </div>
-                <div
-                  className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
-                  onClick={() => {
-                    showExplorePlaces();
-                    selectedPoiCategoryIndex(1);
-                  }}
-                >
-                  <SvgIcons.Restaurant size="18px" className="mr-3" fill="black" />
-                  {t("trips.myTrips.exploreMore.categories.restaurants")}
-                </div>
-                <div
-                  className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
-                  onClick={() => {
-                    showExplorePlaces();
-                    selectedPoiCategoryIndex(2);
-                  }}
-                >
-                  <SvgIcons.Cafe size="18px" className="mr-3" fill="black" />
-                  {t("trips.myTrips.exploreMore.categories.cafes")}
-                </div>
-                <div
-                  className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
-                  onClick={() => {
-                    showExplorePlaces();
-                    selectedPoiCategoryIndex(3);
-                  }}
-                >
-                  <SvgIcons.NightLife size="20px" className="mr-3" fill="black" />
-                  {t("trips.myTrips.exploreMore.categories.nightlife")}
-                </div>
-                <div
-                  className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
-                  onClick={() => {
-                    showExplorePlaces();
-                    selectedPoiCategoryIndex(4);
-                  }}
-                >
-                  <SvgIcons.Shopping size="20px" className="mr-3" fill="black" />
-                  {t("trips.myTrips.exploreMore.categories.shopping")}
-                </div>
-                {/* {0 < (tripReference?.city.mustTries.length ?? 0) ? (
-                  <div
-                    className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap min-w-fit"
+                    className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
                     onClick={() => {
                       showExplorePlaces();
-                      selectedPoiCategoryIndex(6);
+                      selectedPoiCategoryIndex(0);
                     }}
                   >
-                    <SvgIcons.MustTry size="20px" className="mr-3" fill="black" />
-                    {EXPLORE_MORE.MUST_TRY}
+                    <SvgIcons.Attraction size="20px" className="mr-3" fill="black" />
+                    {t("trips.myTrips.exploreMore.categories.attractions")}
                   </div>
-                ) : (
-                  <></>
-                )} */}
-              </CustomSlider>
+                  <div
+                    className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
+                    onClick={() => {
+                      showExplorePlaces();
+                      selectedPoiCategoryIndex(1);
+                    }}
+                  >
+                    <SvgIcons.Restaurant size="18px" className="mr-3" fill="black" />
+                    {t("trips.myTrips.exploreMore.categories.restaurants")}
+                  </div>
+                  <div
+                    className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
+                    onClick={() => {
+                      showExplorePlaces();
+                      selectedPoiCategoryIndex(2);
+                    }}
+                  >
+                    <SvgIcons.Cafe size="18px" className="mr-3" fill="black" />
+                    {t("trips.myTrips.exploreMore.categories.cafes")}
+                  </div>
+                  <div
+                    className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
+                    onClick={() => {
+                      showExplorePlaces();
+                      selectedPoiCategoryIndex(3);
+                    }}
+                  >
+                    <SvgIcons.NightLife size="20px" className="mr-3" fill="black" />
+                    {t("trips.myTrips.exploreMore.categories.nightlife")}
+                  </div>
+                  <div
+                    className="text-sm !w-auto bg-white rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer text-black font-medium flex items-center justify-center whitespace-nowrap"
+                    onClick={() => {
+                      showExplorePlaces();
+                      selectedPoiCategoryIndex(4);
+                    }}
+                  >
+                    <SvgIcons.Shopping size="20px" className="mr-3" fill="black" />
+                    {t("trips.myTrips.exploreMore.categories.shopping")}
+                  </div>
+                </CustomSlider> */}
+              </div>
             </div>
-          </div>
-          <div className="my-4 px-6">
-            <div className="my-4 font-medium text-lg">{t("trips.myTrips.itinerary.title")}</div>
-            {plansIdDate.length > 0 ? (
+          )}
+          <div ref={scrollRef} className="my-4 px-6">
+            {!(sharedTrip && window.tconfig.WIDGET_THEME_1) && <div className="my-4 font-medium text-lg">{t("trips.myTrips.itinerary.title")}</div>}
+            {plansIdDate.length > 0 && !(sharedTrip && window.tconfig.WIDGET_THEME_1) ? (
               <div className="py-1">
                 <CustomSlider scrollSize={150}>
                   {plansIdDate.map((planIdDate, index) => {
@@ -653,7 +748,10 @@ const Itineraries: FC<IItineraries> = ({
                         className={`text-sm !w-auto rounded-3xl border border-solid border-gray-300 my-0 py-1 px-4 cursor-pointer min-w-fit font-medium whitespace-nowrap ${
                           planDayIndex === index ? "text-white bg-primary-color" : "text-black bg-white"
                         }`}
-                        onClick={() => changePlanDayIndex(index)}
+                        onClick={() => {
+                          changePlanDayIndex(index);
+                          smoothScroll();
+                        }}
                       >
                         {t("trips.myTrips.itinerary.day")} <span>{plansIdDate.findIndex((o) => o.id === planIdDate.id) + 1}</span>
                         <span>
@@ -671,12 +769,12 @@ const Itineraries: FC<IItineraries> = ({
               </div>
             ) : null}
           </div>
-          {process.env.REACT_APP_API_URL !== "https://gyssxjfp9d.execute-api.eu-west-1.amazonaws.com/prodnext" && (
+          {!(sharedTrip && window.tconfig.WIDGET_THEME_1) && process.env.REACT_APP_API_URL !== "https://gyssxjfp9d.execute-api.eu-west-1.amazonaws.com/prodnext" && (
             <div className="my-4 px-6">
               <div className="my-4 font-normal text-lg">{t("trips.myTrips.itinerary.customPoiModal.addYourCustomizeStep")}</div>
               {/* <div className="w-full flex justify-start mb-4"> */}
               <div
-                className="text-sm rounded-3xl border border-solid border-gray-300 my-0 py-2 px-4 cursor-pointer text-center font-medium whitespace-nowrap text-black bg-background-color max-w-fit"
+                className="text-sm rounded-3xl border border-solid border-gray-300 my-0 py-2 px-4 cursor-pointer text-center font-medium whitespace-nowrap text-text-primary-color bg-background-color max-w-fit"
                 onClick={() => customPoiModalShow()}
               >
                 {t("trips.myTrips.itinerary.customPoiModal.button")}
@@ -687,7 +785,7 @@ const Itineraries: FC<IItineraries> = ({
           <div className={`${classes.stepList}`}>
             {plan?.generatedStatus === 2 && <div className="ml-7 my-4 text-sm text-yellow-400">{t("trips.myTrips.itinerary.error.generatedStatus2")}</div>}
             {plan?.generatedStatus === 3 && <div className="ml-7 my-4 text-sm text-yellow-400">{t("trips.myTrips.itinerary.error.generatedStatus3")}</div>}
-            {accommendationMemo}
+            {!(sharedTrip && window.tconfig.WIDGET_THEME_1) && accommendationMemo}
             {sortableStepList}
           </div>
           {tripReference && (
@@ -695,7 +793,7 @@ const Itineraries: FC<IItineraries> = ({
               <ShareTripModal
                 showModal={showShareTripModal}
                 setShowModal={() => setShowShareTripModal(!showShareTripModal)}
-                loading={shareTripMoalLoading}
+                loading={shareTripModalLoading}
                 switchChecked={tripReference.shared}
                 onChange={switchCheckedOnchange}
                 cityName={tripReference?.city.name}
@@ -703,6 +801,17 @@ const Itineraries: FC<IItineraries> = ({
                 departureDatetime={tripReference.tripProfile.departureDatetime}
                 tripHash={tripReference.tripHash}
                 dayIndex={dayIndexNumber}
+              />
+              <ChangeTripNameModal
+                showModal={showEditTripNameModal}
+                setShowModal={() => setShowEditTripNameModal(!showEditTripNameModal)}
+                loading={editTripNameModalLoading}
+                tripName={tripReference.tripProfile.tripName || ""}
+                onChange={(tripName: string, tripHash?: string | undefined) => tripNameOnchange(tripName, tripHash)}
+                cityName={tripReference?.city.name}
+                arrivalDatetime={tripReference.tripProfile.arrivalDatetime}
+                departureDatetime={tripReference.tripProfile.departureDatetime}
+                tripHash={tripReference.tripHash}
               />
             </>
           )}

@@ -7,13 +7,14 @@ import Model from "@tripian/model";
 import useFocus from "../../../../../hooks/useFocus";
 import { useHistory } from "react-router";
 import useTranslate from "../../../../../hooks/useTranslate";
-import { QR_READER } from "../../../../../constants/ROUTER_PATH_TITLE";
+import { QR_READER, QR_WRITER } from "../../../../../constants/ROUTER_PATH_TITLE";
 import { PreLoading, CloseIconButton, OfferCard } from "@tripian/react";
 
 // import IFavoritePoi from "../../../../../models/IFavoritePoi";
 // import { changeFavoritesVisible } from '../../../../../redux/action/layout';
 
 import classes from "./MyOffersContainer.module.scss";
+import moment from "moment";
 
 interface IMyOffersContainer {
   show: boolean;
@@ -25,9 +26,10 @@ interface IMyOffersContainer {
   isLoadingOffer: (offerId: number) => boolean;
   offerOptIn: (offerId: number, optInDate: string) => Promise<void>;
   offerOptOut: (offerId: number) => Promise<void>;
+  timezone?: string;
 }
 
-const MyOffersContainer: React.FC<IMyOffersContainer> = ({ show, close, dayIndex, plans, loadingMyAllOffers, myAllOffers, isLoadingOffer, offerOptIn, offerOptOut }) => {
+const MyOffersContainer: React.FC<IMyOffersContainer> = ({ show, close, dayIndex, plans, loadingMyAllOffers, myAllOffers, isLoadingOffer, offerOptIn, offerOptOut, timezone }) => {
   const currentPlanDate = useMemo(() => (plans && dayIndex < plans.length ? plans[dayIndex].date : undefined), [dayIndex, plans]);
 
   const offerContainerClasses = [classes.myOffersContainer];
@@ -45,8 +47,6 @@ const MyOffersContainer: React.FC<IMyOffersContainer> = ({ show, close, dayIndex
 
   const history = useHistory();
 
-  // console.log(MyOffersContainer.show", show, offerContainerClasses);
-
   const renderContent = () => {
     if (loadingMyAllOffers && myAllOffers === undefined) return <PreLoading />;
 
@@ -59,8 +59,8 @@ const MyOffersContainer: React.FC<IMyOffersContainer> = ({ show, close, dayIndex
         );
 
       return myAllOffers.map((offerPoi: Model.Poi, i: number) => {
-        return offerPoi.offers.map((offer: Model.Offer) => (
-          <div className="my-2">
+        return offerPoi.offers.map((offer: Model.Offer, index) => (
+          <div className="my-2" key={index}>
             <OfferCard
               key={`my-offers-result-poi-${offer.id}`}
               offer={offer}
@@ -69,18 +69,35 @@ const MyOffersContainer: React.FC<IMyOffersContainer> = ({ show, close, dayIndex
               optClicked={(optIn: boolean, id: number) => {
                 if (currentPlanDate) {
                   if (optIn) {
-                    offerOptIn(id, currentPlanDate);
+                    const baseDate = moment(currentPlanDate);
+                    const currentTime = moment();
+                    const dateTime = baseDate
+                      .set({
+                        hour: currentTime.hour(),
+                        minute: currentTime.minute(),
+                        second: currentTime.second(),
+                      })
+                      .tz(timezone || "UTC")
+                      .format("YYYY-MM-DD HH:mm:ss");
+                    offerOptIn(id, dateTime);
                   } else {
                     return offerOptOut(id);
                   }
                 }
                 // if (currentPlanDate) optIn ? offerOptIn(id, currentPlanDate) : offerOptOut(id);
               }}
-              redeemClicked={() => history.push(QR_READER.PATH)}
+              redeemClicked={() => {
+                if (window.tconfig.QR_READER === "business") {
+                  history.push(QR_WRITER.PATH + `/${offer.id}`);
+                } else {
+                  history.push(QR_READER.PATH);
+                }
+              }}
               cardClicked={() => focusPoi(offerPoi)}
               isLoadingOffer={isLoadingOffer}
               optedIn={myAllOffers?.some((p) => p.offers.some((x) => x.id === offer.id)) || false}
               poiName={offerPoi.name}
+              redeemText={window.tconfig.QR_READER === "business" ? "View QR Code" : "Redeem"}
             />
           </div>
         ));

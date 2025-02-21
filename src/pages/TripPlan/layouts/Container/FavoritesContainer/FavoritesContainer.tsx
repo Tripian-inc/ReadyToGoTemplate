@@ -18,9 +18,14 @@ interface IFavoritesContainer {
   show: boolean;
   close: () => void;
   dayIndex: number;
+  gygTourIds: number[];
+  bbTourIds: number[];
+  viatorTourIds: string[];
+  toristyTourIds: string[];
+  toursLoading: boolean;
 }
 
-const FavoritesContainer: React.FC<IFavoritesContainer> = ({ show, close /* , dayIndex */ }) => {
+const FavoritesContainer: React.FC<IFavoritesContainer> = ({ show, close, gygTourIds, bbTourIds, viatorTourIds, toristyTourIds, toursLoading /* , dayIndex */ }) => {
   const { cityId, favorites, loadingFavorites, loadingFavoritePoi /*, favoriteDelete */, favoritesFetch } = useFavorite();
   const { focusPoi } = useFocus();
 
@@ -65,6 +70,11 @@ const FavoritesContainer: React.FC<IFavoritesContainer> = ({ show, close /* , da
             TOUR_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
             TICKET_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
             RESTAURANT_RESERVATION_PROVIDER_IDS={window.tconfig.RESTAURANT_RESERVATION_PROVIDER_IDS}
+            gygTourIds={gygTourIds}
+            bbTourIds={bbTourIds}
+            viatorTourIds={viatorTourIds}
+            toristyTourIds={toristyTourIds}
+            tourTicketProductsLoading={toursLoading}
             t={t}
           />
         )

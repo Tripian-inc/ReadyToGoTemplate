@@ -26,18 +26,24 @@ const useSearchPoi = () => {
   }, [tripReference?.city]);
 
   const searchPoi = useCallback(
-    (query: string, searchPoiCategories?: number[], page?: number) =>
-      api.poisNameSearch({ cityId: cityId, search: query, poiCategories: searchPoiCategories?.join(","), limit: 20, page }),
+    (query: string, searchPoiCategories?: number[], showOffersOnly?: boolean, page?: number) =>
+      api.poisNameSearch({ cityId: cityId, search: query, poiCategories: searchPoiCategories?.join(","), showOffersOnly, limit: 20, page }),
     [cityId]
   );
 
   const openSearchPoi = useCallback(
-    (query: string[], searchPoiCategories?: number[], showOffersOnly?: boolean, page?: number) =>
-      api.poisOpenSearch({ cityId: cityId, search: query.join("|"), poiCategories: searchPoiCategories?.join(","), showOffersOnly, limit: 20, page }),
+    (query: string[], searchPoiCategories?: number[], showOffersOnly?: boolean, page?: number) => {
+      return api.poisOpenSearch({ cityId: cityId, search: query.join("|"), poiCategories: searchPoiCategories?.join(","), showOffersOnly, limit: 20, page });
+    },
     [cityId]
   );
 
   const searchPoiAutoComplete = useCallback(() => api.poisSearchAutoComplete(), []);
+
+  const searchPoiAutoCompleteTags = useCallback(
+    (searchPoiCategories?: number[]) => api.poisSearchAutoCompleteTags(cityId || 0, searchPoiCategories && searchPoiCategories?.join(",")),
+    [cityId]
+  );
 
   const tastePoisFetch = useCallback(
     (tasteId: number): Promise<Model.Poi[]> => {
@@ -61,7 +67,7 @@ const useSearchPoi = () => {
     [dispatch, cityId]
   );
 
-  return { searchPoi, openSearchPoi, searchPoiAutoComplete, tastePoisFetch, tastePois, loadingTastePois };
+  return { searchPoi, openSearchPoi, searchPoiAutoComplete, searchPoiAutoCompleteTags, tastePoisFetch, tastePois, loadingTastePois };
 };
 
 export default useSearchPoi;

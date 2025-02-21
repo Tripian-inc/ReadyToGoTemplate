@@ -1,4 +1,4 @@
-import { useState, useCallback /* , useEffect */ } from "react";
+import { useState, useCallback /* , useEffect */, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import Model from "@tripian/model";
@@ -6,6 +6,7 @@ import { api } from "@tripian/core";
 import ICombinedState from "../redux/model/ICombinedState";
 import { changeFavorites, changeLoadingFavorites, saveNotification } from "../redux/action/trip";
 import IFavoritePoi from "../models/IFavoritePoi";
+import { useParams } from "react-router";
 
 const useFavorite = () => {
   const [loading, setLoading] = useState<{ add: string[]; delete: string[] }>({ add: [], delete: [] });
@@ -17,6 +18,13 @@ const useFavorite = () => {
     readOnlyTrip: state.trip.readOnly,
   }));
   const dispatch = useDispatch();
+
+  const { hashParam } = useParams<{ hashParam: string }>();
+
+  const shared = useMemo(() => {
+    const params = hashParam.split("!");
+    return params.length > 1 && hashParam.split("!")[1] === "s";
+  }, [hashParam]);
 
   // if (tripHash === undefined) console.warn('useFavorite called with undefined tripHash'); // eslint-disable-line no-console
 
@@ -45,7 +53,7 @@ const useFavorite = () => {
         const modelFavoriteIds: string[] = modelFavorites.map((mf) => mf.poiId);
 
         return api
-          .pois(modelFavoriteIds)
+          .pois(modelFavoriteIds, Number(!shared))
           .then((modelPois: Model.Poi[]) => {
             modelFavorites.forEach((mf: Model.Favorite) => {
               const favPoi: Model.Poi | undefined = modelPois.find((mp) => mp.id === mf.poiId);
@@ -81,7 +89,7 @@ const useFavorite = () => {
       .finally(() => {
         dispatch(changeLoadingFavorites(false));
       });
-  }, [cityId, dispatch, readOnlyTrip]);
+  }, [cityId, dispatch, readOnlyTrip, shared]);
 
   const favoriteAdd = useCallback(
     (poiId: string): Promise<Model.Favorite> => {

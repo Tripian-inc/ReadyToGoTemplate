@@ -2,7 +2,6 @@
 /* eslint-disable react/require-default-props */
 
 import React, { useState } from "react";
-import Model from "@tripian/model";
 import { SideNavigation, ButtonIcons, BUTTON_TYPES } from "@tripian/react";
 import { useHistory } from "react-router";
 import {
@@ -16,15 +15,16 @@ import {
   MY_WALLET,
   LOGIN,
   TOURS_AND_TICKETS,
+  FEEDBACK_PAGE,
+  MY_BOOKINGS_PAGE,
+  CITY_INFO,
 } from "../../constants/ROUTER_PATH_TITLE";
-
 import useAuth from "../../hooks/useAuth";
 import useTrip from "../../hooks/useTrip";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import TripInfoHeader from "./TripInfoHeader/TripInfoHeader";
 import useUser from "../../hooks/useUser";
 import { removeLocalStorageToken } from "../AppWrapper/localStorages";
-import useFeedBack from "../../hooks/useFeedback";
 import useTranslate from "../../hooks/useTranslate";
 import classes from "./AppNav.module.scss";
 
@@ -32,6 +32,7 @@ interface IAppNav {
   header?: string;
   tripInfoHeader?: boolean;
   tripAppMenu?: JSX.Element;
+  sharedTrip?: boolean;
 }
 
 enum MENUITEMS {
@@ -40,13 +41,12 @@ enum MENUITEMS {
   SUPPORT = "SUPPORT",
 }
 
-const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu }) => {
+const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu, sharedTrip = false }) => {
   const [show, setShow] = useState<boolean>(false);
 
   const { isLoggedIn, logout } = useAuth();
   const { user } = useUser();
   const { tripClear, tripReference } = useTrip();
-  const { loadingFeedback, feedbacks, feedbackAdd } = useFeedBack();
   const history = useHistory();
 
   const { getLocalData, setLocalData } = useLocalStorage<"light" | "dark">("theme");
@@ -55,10 +55,21 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
   const { t, langCode, onSelectedLangCode } = useTranslate();
 
   const [checked, setChecked] = useState<boolean>(theme ? theme === "dark" : window.tconfig.AVAILABLE_THEMES[0] === "dark");
-  const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
 
   // if (!isLoggedIn) return null;
   const userFullName = `${user?.firstName || ""} ${user?.lastName || ""}`;
+
+  const logoutFromCognito = () => {
+    const configs = {
+      clientId: window.tconfig.COGNITO.CLIENT_ID,
+      domain: window.tconfig.COGNITO.DOMAIN,
+      identityProviders: window.tconfig.COGNITO.IDENTITY_PROVIDERS,
+      region: window.tconfig.COGNITO.REGION,
+      logoutRedirectUri: `${window.tconfig.DOMAIN_ORIGIN}${window.tconfig.DOMAIN_ROUTER_BASE_NAME}`,
+    };
+    const url = `https://${configs.domain}.auth.${configs.region}.amazoncognito.com/logout?response_type=code&client_id=${configs.clientId}&redirect_uri=${configs.logoutRedirectUri}/cognito-redirect`;
+    window.location.href = url;
+  };
 
   // useEffect(() => {
   //   if (!loadingCities) {
@@ -126,6 +137,18 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
     },
 
     {
+      header: MENUITEMS.TRIPS,
+      title: t("trips.myTrips.itinerary.bookings.title"),
+      onClick: () => history.push(MY_BOOKINGS_PAGE.PATH),
+    },
+
+    {
+      header: MENUITEMS.TRIPS,
+      title: t("cityInfo.title"),
+      onClick: () => history.push(CITY_INFO.PATH),
+    },
+
+    {
       header: MENUITEMS.USER,
       title: t("user.myWallet.title"),
       onClick: () => {
@@ -162,7 +185,7 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
       header: MENUITEMS.SUPPORT,
       title: t("support.feedback.title"),
       onClick: () => {
-        setShowFeedbackModal(true);
+        history.push(FEEDBACK_PAGE.PATH);
       },
     },
 
@@ -178,7 +201,7 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
       header: MENUITEMS.SUPPORT,
       title: t("support.aboutTripian.title"),
       onClick: () => {
-        window.open("https://www.tripian.com/");
+        window.open("https://www.tripian.com/about.html");
       },
     },
   ];
@@ -203,6 +226,16 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
     });
   }
 
+  if (window.tconfig.SHOW_USER_PROFILE) {
+    sideNavigationMenuItems.push({
+      header: MENUITEMS.USER,
+      title: t("user.profile"),
+      onClick: () => {
+        history.push(USER_PROFILE_PATH_TITLE.PATH);
+      },
+    });
+  }
+
   if (!window.tconfig.LOGIN_WITH_HASH) {
     sideNavigationMenuItems.push({
       header: MENUITEMS.USER,
@@ -210,18 +243,11 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
       onClick: () => {
         removeLocalStorageToken();
         logout();
+        onSelectedLangCode("en");
         tripClear();
         history.push(LOGIN.PATH);
-      },
-    });
-  }
-
-  if (window.tconfig.SHOW_USER_PROFILE) {
-    sideNavigationMenuItems.push({
-      header: MENUITEMS.USER,
-      title: t("user.profile"),
-      onClick: () => {
-        history.push(USER_PROFILE_PATH_TITLE.PATH);
+        if (window.tconfig.SOCIAL_LOGIN === true) logoutFromCognito();
+        window.tconfig.SOCIAL_LOGIN = false;
       },
     });
   }
@@ -264,7 +290,7 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
         header: MENUITEMS.SUPPORT,
         title: t("support.aboutTripian.title"),
         onClick: () => {
-          window.open("https://www.tripian.com/");
+          window.open("https://www.tripian.com/about.html");
         },
       },
     ];
@@ -280,13 +306,6 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
     </>
   );
 
-  const sendFeedback = (feedback: Model.FeedbackRequest) => {
-    const newFeedback = { ...feedback };
-    newFeedback.tripHash = tripReference?.tripHash;
-    newFeedback.desc = feedback.desc.replace(/^\s+|\s+$/g, "");
-    return feedbackAdd(newFeedback);
-  };
-
   return (
     <>
       <header className={`${classes.header} ${classes.headerFake}`}>
@@ -295,7 +314,7 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
 
       <header className={`${classes.header} ${classes.fixed} ${classes.bshadow}`}>
         <div className={classes.hcontainer}>
-          {window.tconfig.SHOW_SIDE_NAV && (
+          {window.tconfig.SHOW_SIDE_NAV && !(sharedTrip && window.tconfig.WIDGET_THEME_1) && (
             <div className={`pl3 ${classes.barsIcon}`} style={{ position: "absolute" }}>
               <ButtonIcons.Bars
                 type={BUTTON_TYPES.TEXT}
@@ -324,7 +343,7 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
           {pageNav}
         </div>
       </header>
-      {window.tconfig.SHOW_SIDE_NAV && (
+      {window.tconfig.SHOW_SIDE_NAV && !(sharedTrip && window.tconfig.WIDGET_THEME_1) && (
         <SideNavigation
           title={userFullName}
           menuItems={sideNavigationMenuItems}
@@ -333,20 +352,18 @@ const AppNav: React.FC<IAppNav> = ({ header, tripInfoHeader = false, tripAppMenu
             setShow(false);
           }}
           showBbButton={window.tconfig.BRAND_NAME === "bookbarbados"}
-          feedbackSubjects={feedbacks?.mainSubjects || []}
-          sendFeedback={(feedback: Model.FeedbackRequest) => sendFeedback(feedback)}
-          loadingFeedback={loadingFeedback}
           themeSwitchChecked={checked}
           themeSwitchCheckedOnchange={(checked: boolean) => {
             setChecked(!checked);
             checked ? setLocalData("light") : setLocalData("dark");
           }}
-          showFeedbackModal={showFeedbackModal}
-          setShowFeedbackModal={(show: boolean) => setShowFeedbackModal(show)}
           showThemeSwitch={window.tconfig.AVAILABLE_THEMES.length > 1}
-          languageOptions={window.tconfig.T.lang_codes}
+          languageOptions={window.tconfig.T.langCodes}
           selectedLanguage={langCode}
-          onSelectedLanguage={onSelectedLangCode}
+          onSelectedLanguage={(value: string) => {
+            onSelectedLangCode(value);
+            window.location.reload();
+          }}
           t={t}
           // showGoogleTranslate={window.tconfig.LANGUAGES.length > 0}
         />

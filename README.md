@@ -17,6 +17,7 @@ yarn install
 ```sh
 REACT_APP_API_URL=https://api.example.com
 REACT_APP_HOSTNAME=localhost
+REACT_APP_GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY
 ```
 
 Replace https://api.example.com with the URL of your API and localhost with your hostname.

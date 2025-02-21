@@ -5,7 +5,17 @@ import Model, { Providers } from "@tripian/model";
 
 import IFocusState from "../redux/model/IFocusState";
 import ICombinedState from "../redux/model/ICombinedState";
-import { changeFocusedStep, changeFocusedAlternative, changeFocusedPoi, clearFocus, changeFocusedProviderPoi, changeFocusedCarRentOffer } from "../redux/action/focus";
+import {
+  changeFocusedStep,
+  changeFocusedAlternative,
+  changeFocusedPoi,
+  clearFocus,
+  changeFocusedProviderPoi,
+  changeFocusedCarRentOffer,
+  changeFocusedProviderTour,
+  changeFocusedProviderVideo,
+  changeFocusedProviderEvent,
+} from "../redux/action/focus";
 import gmapGlobal from "../redux/gmapGlobal";
 
 const useFocus = () => {
@@ -63,11 +73,41 @@ const useFocus = () => {
     [dispatch]
   );
 
+  const focusProviderTour = useCallback(
+    (tour: Providers.Rezdy.Product) => {
+      dispatch(changeFocusedProviderTour(tour));
+
+      gmapGlobal.setGmapCenter({ lat: Number(tour.latitude), lng: Number(tour.longitude) });
+      gmapGlobal.setGmapZoomFocus();
+    },
+    [dispatch]
+  );
+
+  const focusProviderVideo = useCallback(
+    (video: Providers.Videreo.ResponseResult) => {
+      dispatch(changeFocusedProviderVideo(video));
+
+      gmapGlobal.setGmapCenter({ lat: Number(video.lat), lng: Number(video.lng) });
+      gmapGlobal.setGmapZoomFocus();
+    },
+    [dispatch]
+  );
+
+  const focusProviderEvent = useCallback(
+    (event: Providers.Victory.Event) => {
+      dispatch(changeFocusedProviderEvent(event));
+
+      gmapGlobal.setGmapCenter({ lat: Number(event.venue.address.latitude), lng: Number(event.venue.address.longitude) });
+      gmapGlobal.setGmapZoomFocus();
+    },
+    [dispatch]
+  );
+
   const focusLost = useCallback(() => {
     dispatch(clearFocus());
   }, [dispatch]);
 
-  return { focus, focusLost, focusStep, focusAlternative, focusPoi, focusProviderPoi, focusCarRentOffer };
+  return { focus, focusLost, focusStep, focusAlternative, focusPoi, focusProviderPoi, focusCarRentOffer, focusProviderTour, focusProviderVideo, focusProviderEvent };
 };
 
 export default useFocus;

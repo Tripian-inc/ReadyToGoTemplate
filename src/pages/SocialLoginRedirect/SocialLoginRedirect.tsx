@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
-import { useHistory } from "react-router";
+import { useHistory, useLocation } from "react-router";
 import { api } from "@tripian/core";
 import { PageLoading } from "@tripian/react";
-import { TRIPS, LOGIN, SOCIAL_LOGIN_REDIRECT } from "../../constants/ROUTER_PATH_TITLE";
+import { TRIPS, LOGIN, SOCIAL_LOGIN_REDIRECT, TRIP_CLONE, TRIP_PLAN } from "../../constants/ROUTER_PATH_TITLE";
 import Model from "@tripian/model";
 import useAuth from "../../hooks/useAuth";
 import useUser from "../../hooks/useUser";
@@ -14,11 +14,24 @@ const SocialLoginRedirect = () => {
 
   const history = useHistory();
 
+  const useQuery = <T extends { [K in keyof T]?: string } = {}>(): T => {
+    const query = new URLSearchParams(useLocation().search);
+    const result: T = {} as T;
+    query.forEach((val, key) => {
+      result[key] = val;
+    });
+
+    return result;
+  };
+
+  const { state } = useQuery<{ state: string | undefined }>();
+
   useEffect(() => {
     const callbackSuccessLogin = (token: Model.Token) => {
       saveLocalStorageToken(token);
       loggedIn();
       userFetch();
+      window.tconfig.SOCIAL_LOGIN = true;
     };
 
     const params = new URLSearchParams(window.location.search);
@@ -34,17 +47,24 @@ const SocialLoginRedirect = () => {
           bundleId: "asd",
         })
         .then(async (newToken: Model.Token) => {
-          console.log("newToken", newToken);
-
           api.setToken(newToken);
           callbackSuccessLogin(newToken);
-          history.replace(TRIPS.PATH);
+          // console.log("state", state);
+          if (state !== undefined && state !== null && state !== "") {
+            if (window.tconfig.WIDGET_THEME_1) {
+              history.replace(`${TRIP_PLAN.PATH}/${state}!s/0`);
+            } else {
+              history.replace(`${TRIP_CLONE.PATH}/${state}`);
+            }
+          } else {
+            history.replace(TRIPS.PATH);
+          }
         })
         .catch(() => {
           history.replace(LOGIN.PATH);
         });
     }
-  }, [history, loggedIn, userFetch]);
+  }, [history, loggedIn, userFetch, state]);
 
   return <PageLoading />;
 };

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
-import Model from "@tripian/model";
+import Model, { helper } from "@tripian/model";
 import { TripCard, ConfirmModalPopup, TabMenu, Button, PreLoading } from "@tripian/react";
 // import { useSelector } from 'react-redux';
 import moment from "moment";
@@ -10,6 +10,7 @@ import { saveNotification } from "../../redux/action/trip";
 import ICombinedState from "../../redux/model/ICombinedState";
 import useTrip from "../../hooks/useTrip";
 import ShareTripModal from "../ShareTripModal/ShareTripModal";
+import ChangeTripNameModal from "../ChangeTripNameModal/ChangeTripNameModal";
 import useTranslate from "../../hooks/useTranslate";
 import classes from "./TripList.module.scss";
 
@@ -29,7 +30,7 @@ const TripList: React.FC<ITripList> = ({ tripReferences, loadingTripReferences, 
 
   const { t } = useTranslate();
 
-  const { tripShare } = useTrip();
+  const { tripShare, tripNameUpdate } = useTrip();
   const { shared } = useSelector((state: ICombinedState) => ({
     shared: state.trip.reference?.shared,
   }));
@@ -38,6 +39,13 @@ const TripList: React.FC<ITripList> = ({ tripReferences, loadingTripReferences, 
     show: false,
     loading: false,
     switchChecked: shared || false,
+    tripReference: undefined,
+  });
+
+  const [tripNameModalState, setTripNameModalState] = useState<{ show: boolean; loading: boolean; tripName: string; tripReference?: Model.TripReference }>({
+    show: false,
+    loading: false,
+    tripName: "",
     tripReference: undefined,
   });
 
@@ -64,7 +72,7 @@ const TripList: React.FC<ITripList> = ({ tripReferences, loadingTripReferences, 
     api
       .tripDownloadIcs(tripHash)
       .catch((err) => {
-        dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "planDownload", "Download Plan", err));
+        dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "planDownload", err));
       })
       .finally(() => {
         const newIcsLoading = { ...icsLoading };
@@ -79,6 +87,22 @@ const TripList: React.FC<ITripList> = ({ tripReferences, loadingTripReferences, 
       setShareModalState({ ...shareModalState, loading: true });
       tripShare(tripHash, checked).finally(() => {
         setShareModalState({ ...shareModalState, switchChecked: checked, loading: false });
+      });
+    }
+  };
+
+  const tripNameOnchange = (tripName: string, tripHash?: string) => {
+    if (tripHash && tripNameModalState.tripReference?.tripProfile) {
+      const clonedTripProfile = helper.deepCopy(tripNameModalState.tripReference.tripProfile);
+      const updatedTripProfile = {
+        ...clonedTripProfile,
+        tripName,
+      };
+
+      setTripNameModalState({ ...tripNameModalState, loading: true });
+
+      tripNameUpdate(tripHash, updatedTripProfile).finally(() => {
+        setTripNameModalState({ ...tripNameModalState, tripName, loading: false, show: false });
       });
     }
   };
@@ -133,6 +157,18 @@ const TripList: React.FC<ITripList> = ({ tripReferences, loadingTripReferences, 
             dayIndex={0}
           />
 
+          <ChangeTripNameModal
+            showModal={tripNameModalState?.show}
+            setShowModal={() => setTripNameModalState({ ...tripNameModalState, show: !tripNameModalState.show })}
+            loading={tripNameModalState.loading}
+            tripName={tripNameModalState.tripName}
+            onChange={(tripName: string, tripHash?: string | undefined) => tripNameOnchange(tripName, tripHash)}
+            cityName={tripNameModalState.tripReference?.city.name}
+            arrivalDatetime={tripNameModalState.tripReference?.tripProfile.arrivalDatetime}
+            departureDatetime={tripNameModalState.tripReference?.tripProfile.departureDatetime}
+            tripHash={tripNameModalState.tripReference?.tripHash}
+          />
+
           {tripReferenceToShow.length === 0 ? (
             <>
               <div className="col col12 mt5">{isPastTrip ? t("trips.myTrips.pastTrips.emptyMessage") : t("trips.myTrips.upComingTrips.emptyMessage")}</div>
@@ -158,6 +194,9 @@ const TripList: React.FC<ITripList> = ({ tripReferences, loadingTripReferences, 
                   shareTrip={(tripReference) => {
                     setShareModalState({ ...shareModalState, show: true, loading: false, tripReference, switchChecked: tripReference.shared });
                   }}
+                  tripNameClicked={(tripReference) =>
+                    setTripNameModalState({ ...tripNameModalState, show: true, loading: false, tripReference, tripName: tripReference.tripProfile.tripName || "" })
+                  }
                   t={t}
                 />
               </div>

@@ -19,7 +19,7 @@ interface ITripState {
   loading: { reference: boolean; plans: boolean; alternatives: boolean; favorites: boolean; reactions: boolean; offers: boolean; reservations: boolean };
 
   // Notifications
-  notifications: { id: number; type: Model.NOTIFICATION_TYPE; functionName: string; title: string; message: string; closeMs: number; hide: boolean }[];
+  notifications: { id: number; type: Model.NOTIFICATION_TYPE; functionName: string; message: string; closeMs: number; hide: boolean }[];
 }
 
 export default ITripState;

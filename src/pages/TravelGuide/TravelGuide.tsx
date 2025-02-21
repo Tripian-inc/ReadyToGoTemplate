@@ -528,7 +528,7 @@ const TravelGuidePage = () => {
                 }}
                 hideBookingButton
                 RESTAURANT_RESERVATION_PROVIDER_IDS={window.tconfig.RESTAURANT_RESERVATION_PROVIDER_IDS}
-                hideButtons={false}
+                hideFavoriteIcon={false}
                 t={t}
               />
             </div>
@@ -772,6 +772,10 @@ const TravelGuidePage = () => {
             TOUR_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
             TICKET_PROVIDER_IDS={window.tconfig.TOUR_TICKET_PROVIDER_IDS}
             RESTAURANT_RESERVATION_PROVIDER_IDS={window.tconfig.RESTAURANT_RESERVATION_PROVIDER_IDS}
+            gygTourIds={[]}
+            bbTourIds={[]}
+            viatorTourIds={[]}
+            toristyTourIds={[]}
             t={t}
           />
         )
@@ -908,7 +912,7 @@ const TravelGuidePage = () => {
                 </div>
               ) : null}
               <div>
-                <ReservationDetails reservationInfo={yelpReservationDetailsModalState.reservationDetails} />
+                <ReservationDetails reservationInfo={yelpReservationDetailsModalState.reservationDetails} t={t} />
               </div>
               <div className="row center">
                 <div>
@@ -929,6 +933,7 @@ const TravelGuidePage = () => {
         </div>
       </Modal>
     ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [yelpReservationDetailsModalState.show, yelpReservationDetailsModalState.reservationDetails, loadingReservation, memoizedReservationCancel]
   );
   /* ******* YELP RESERVATION DETAILS MODAL***** */

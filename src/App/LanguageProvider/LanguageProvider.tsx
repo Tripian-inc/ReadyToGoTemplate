@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { api } from "@tripian/core";
 import moment from "moment";
@@ -25,13 +25,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [langCode, setLangCode] = useState<string>(getLocalData() || "en");
 
+  useEffect(() => {
+    changeMomentLocale(langCode);
+  }, [langCode]);
+
   const onSelectedLangCode = async (langCode: string) => {
     localStorage.setItem("language", langCode);
     await changeMomentLocale(langCode);
     window.twindow.langCode = langCode;
     setLangCode(langCode);
     api.setLang(langCode);
-    window.location.reload();
   };
 
   const value: LanguageContextType = {

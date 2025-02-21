@@ -102,6 +102,7 @@ const LoginPage = () => {
               history.push("/register");
             }
           }}
+          customQuery={sharedTripHash}
           t={t}
         />
         {/* </div> */}

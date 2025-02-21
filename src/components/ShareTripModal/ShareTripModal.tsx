@@ -105,7 +105,12 @@ const ShareTripModal: React.FC<IShareTripModal> = ({
                     <SvgIcons.Link size="1rem" className="mr-2" />
                     <span>{tripUrl}</span>
                   </div>
-                  <Button color="primary" className="rounded-3xl h-10 min-w-fit" onClick={() => copyToClipBoard(tripUrl)} text={copySuccess ? "Copied Link!" : "Copy Link"} />
+                  <Button
+                    color="primary"
+                    className="rounded-3xl h-10 min-w-fit"
+                    onClick={() => copyToClipBoard(tripUrl)}
+                    text={copySuccess ? `${t("trips.shareTrip.copiedLink")}` : `${t("trips.shareTrip.copyLink")}`}
+                  />
                 </div>
                 <div className="flex items-center justify-center my-2 text-sm">
                   <div className="text-lg pt-1 mr-1">*</div>

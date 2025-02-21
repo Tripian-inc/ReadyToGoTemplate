@@ -1,5 +1,5 @@
 import { providers } from "@tripian/core";
-import Model, { Providers } from "@tripian/model";
+import Model, { helper, Providers } from "@tripian/model";
 import { useCallback, useEffect, useState } from "react";
 import adyen from "adyen-cse-js";
 import { saveNotification } from "../redux/action/trip";
@@ -56,10 +56,20 @@ export const useGygApi = (cityId?: number, cityName?: string, arrivalDatetime?: 
     if (cityName && arrivalDatetime && departureDatetime && numberOfAdults && window.tconfig.SHOW_TOURS_AND_TICKETS) {
       if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.some((x) => x === Model.PROVIDER_ID.GYG)) {
         setGygLoaders({ tourCatalogLoader: true });
+
+        // TODO
+        // Temporary solution. Will be removed.
+        let cityNameDefault = cityName;
+        if (cityName === "Eugene") {
+          cityNameDefault = "Oregon/Eugene";
+        }
+
+        const cityNameEngChar = helper.toEngChars(cityNameDefault).trim();
+
         providers.gyg
-          ?.toursAll(cityName, undefined, undefined, {
-            start: moment(arrivalDatetime).format("YYYY-MM-DDThh:mm:ss"),
-            end: moment(departureDatetime).format("YYYY-MM-DDThh:mm:ss"),
+          ?.toursAll(cityNameEngChar, undefined, undefined, {
+            start: moment.utc(arrivalDatetime).format("YYYY-MM-DDTHH:mm:ss"),
+            end: moment.utc(departureDatetime).format("YYYY-MM-DDTHH:mm:ss"),
           })
           .then((tours: Providers.Gyg.CatalogGroup[]) => {
             if (tours.length > 0) {
@@ -69,14 +79,15 @@ export const useGygApi = (cityId?: number, cityName?: string, arrivalDatetime?: 
             }
           })
           .catch((gygFetchToursError) => {
-            console.log("gygFetchToursError", gygFetchToursError);
-            // dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygFetchToursError", "Get Your Guide Fetch Tours", "An error occured. Please try again later."));
+            console.log("gygFetchToursErrorr", gygFetchToursError);
+            dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygFetchToursError", gygFetchToursError));
           })
           .finally(() => {
             setGygLoaders({ tourCatalogLoader: false });
           });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [arrivalDatetime, cityName, departureDatetime, dispatch, numberOfAdults, numberOfChildren]);
 
   const fetchGygTourInfo = useCallback(
@@ -97,7 +108,7 @@ export const useGygApi = (cityId?: number, cityName?: string, arrivalDatetime?: 
               return true;
             } catch (gygFetchTourError) {
               // console.log("gygFetchTourError", gygFetchTourError);
-              dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygFetchTourError", "Get Your Guide Fetch Tour", gygFetchTourError as string));
+              dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygFetchTourError", gygFetchTourError as string));
               return false;
             }
           } finally {
@@ -160,7 +171,8 @@ export const useGygApi = (cityId?: number, cityName?: string, arrivalDatetime?: 
             });
           })
           .catch((gygFetchOptionDetailsError) => {
-            dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygFetchOptionDetailsError", "Get Your Guide Fetch Option Details", gygFetchOptionDetailsError as string));
+            // console.log("Get Your Guide Fetch Option Details", gygFetchOptionDetailsError);
+            dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygFetchOptionDetailsError", gygFetchOptionDetailsError as string));
             setErrorMessage("something went wrong");
           })
           .finally(() => {
@@ -193,13 +205,13 @@ export const useGygApi = (cityId?: number, cityName?: string, arrivalDatetime?: 
         const res = await providers.gyg.bookingAdd(bookingRequest);
         if ((res as any).status === "ERROR" && (res as any).errors) {
           const errorMessage = (res as any).errors[0].errorMessage;
-          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygBookingRequestError", "Get Your Guide Booking Request", errorMessage as string));
+          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygBookingRequestError", errorMessage as string));
           return false;
         } else if ((res as any)._metadata && (res as any)._metadata.status === "OK" && (res as any).data) {
           setGygBookingInfo((res as any).data);
           return true;
         } else {
-          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygBookingRequestError", "Get Your Guide Booking Request", "Unexpected response format from server"));
+          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygBookingRequestError", t("trips.toursAndTickets.error.unexpectedResponse")));
           return false;
         }
       } else {
@@ -207,7 +219,7 @@ export const useGygApi = (cityId?: number, cityName?: string, arrivalDatetime?: 
         return false;
       }
     } catch (error) {
-      dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygBookingRequestError", "Get Your Guide Booking Request", error as string));
+      dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygBookingRequestError", error as string));
       return false;
     } finally {
       setGygLoaders({ ...gygLoaders, tourDetailsLoader: false, bookingLoader: false });
@@ -226,9 +238,8 @@ export const useGygApi = (cityId?: number, cityName?: string, arrivalDatetime?: 
               return true;
             })
             .catch((gygFetchTourOptionsError) => {
-              dispatch(
-                saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygTourOptionsRequestError", "Get Your Guide Tour Options Request Error", gygFetchTourOptionsError as string)
-              );
+              // console.log("Get Your Guide Tour Options Request Error",gygFetchTourOptionsError)
+              dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygTourOptionsRequestError", gygFetchTourOptionsError as string));
               return false;
             })
             .finally(() => {
@@ -253,14 +264,8 @@ export const useGygApi = (cityId?: number, cityName?: string, arrivalDatetime?: 
             setGygTourPriceBreakdown(res);
           })
           .catch((gygTourOptionsRequestError) => {
-            dispatch(
-              saveNotification(
-                Model.NOTIFICATION_TYPE.ERROR,
-                "gygTourPriceBreakDownRequestError",
-                "Get Your Guide Tour Price Breakdown Request Error",
-                gygTourOptionsRequestError as string
-              )
-            );
+            // console.log("Get Your Guide Tour Price Breakdown Request Error",gygTourOptionsRequestError)
+            dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "gygTourPriceBreakDownRequestError", gygTourOptionsRequestError as string));
           })
           .finally(() => {
             setGygLoaders({ ...gygLoaders, tourDetailsLoader: false });
@@ -344,42 +349,29 @@ export const useGygApi = (cityId?: number, cityName?: string, arrivalDatetime?: 
             },
           };
 
-          reservationAdd({ key: Model.PROVIDER_NAME.GYG, /* tripHash: tripReference?.tripHash || "", poiId: 0, */ provider: Model.PROVIDER_NAME.GYG, value: saveData }, false).then(
-            () => {
-              setGygLoaders({ ...gygLoaders, paymentLoader: false });
-              setSuccessfullBooking(true);
-              dispatch(
-                saveNotification(
-                  Model.NOTIFICATION_TYPE.SUCCESS,
-                  t("notification.gygReservationSuccess.name"),
-                  t("notification.gygReservationSuccess.title"),
-                  t("notification.gygReservationSuccess.message")
-                )
-              );
-            }
-          );
+          const formattedBookingDateTime = moment(reservationInfo.bookings[0].bookable.datetime).format("YYYY-MM-DD HH:mm:ss");
+
+          reservationAdd(
+            {
+              key: Model.PROVIDER_NAME.GYG,
+              /* tripHash: tripReference?.tripHash || "", poiId: 0, */ provider: Model.PROVIDER_NAME.GYG,
+              value: saveData,
+              bookingDateTime: formattedBookingDateTime,
+            },
+            false
+          ).then(() => {
+            setGygLoaders({ ...gygLoaders, paymentLoader: false });
+            setSuccessfullBooking(true);
+            dispatch(saveNotification(Model.NOTIFICATION_TYPE.SUCCESS, t("notification.gygReservationSuccess.name"), t("notification.gygReservationSuccess.message")));
+          });
           alert("Reservation created successfully.");
         } else {
-          dispatch(
-            saveNotification(
-              Model.NOTIFICATION_TYPE.ERROR,
-              t("notification.gygReservationError.name"),
-              t("notification.gygReservationError.title"),
-              t("notification.gygReservationError.message")
-            )
-          );
+          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, t("notification.gygReservationError.name"), t("notification.gygReservationError.message")));
           setGygLoaders({ ...gygLoaders, paymentLoader: false });
         }
       })
       .catch((gygReservationError) => {
-        dispatch(
-          saveNotification(
-            Model.NOTIFICATION_TYPE.ERROR,
-            t("notification.gygReservationError.name"),
-            t("notification.gygReservationError.title"),
-            t("notification.gygReservationError.message")
-          )
-        );
+        dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, t("notification.gygReservationError.name"), t("notification.gygReservationError.message")));
         setGygLoaders({ ...gygLoaders, paymentLoader: false });
       });
   };

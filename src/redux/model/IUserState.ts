@@ -13,7 +13,7 @@ interface IUserState {
   loading: { user: boolean; tripReferences: boolean; companions: boolean };
 
   // Notifications
-  notifications: { id: number; type: Model.NOTIFICATION_TYPE; functionName: string; title: string; message: string; closeMs: number; hide: boolean }[];
+  notifications: { id: number; type: Model.NOTIFICATION_TYPE; functionName: string; message: string; closeMs: number; hide: boolean }[];
 }
 
 export default IUserState;

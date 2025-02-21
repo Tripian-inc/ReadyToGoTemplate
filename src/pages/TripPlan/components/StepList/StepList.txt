@@ -1,0 +1,458 @@
+/* eslint-disable react/require-default-props */
+
+import React, { FC, useState, useEffect, useMemo, useCallback } from "react";
+import { useSelector } from "react-redux";
+
+import Model from "@tripian/model";
+import { AccommondationCard, DirectionInfo, RouteResult, Switch, StepTimeframe, PlanChangeDay } from "@tripian/react";
+
+import ICombinedState from "../../../../redux/model/ICombinedState";
+// import { /* changeFocusInfoVisible, */ changeLocalExperiencesModalVisible /* , changeSearchVisible */ } from '../../../../redux/action/layout';
+
+import classes from "./StepList.module.scss";
+
+import SortableStepList from "../../../../components/SortableStepList/SortableStepList";
+import DefaultStepCard from "../../../../components/DefaultStepCard/DefaultStepCard";
+
+import /* stepReplace, */
+/* changeAlternativeStepId, */
+/* changeDay, */
+// saveError,
+/* stepDelete, */
+"../../../../redux/action/trip";
+
+import useTrip from "../../../../hooks/useTrip";
+import usePlan from "../../../../hooks/usePlan";
+import useStep from "../../../../hooks/useStep";
+import useReaction from "../../../../hooks/useReaction";
+import useAlternative from "../../../../hooks/useAlternative";
+import useFocus from "../../../../hooks/useFocus";
+
+const getAccommendationStep = (accommendation: Model.Accommodation): Model.Step => {
+  const accommendationPoi: Model.Poi = {
+    id: 0,
+    icon: "Homebase",
+    name: accommendation.name || "AccommendationState Name",
+    description: accommendation.address || "AccommendationState Address",
+    coordinate: accommendation.coordinate || { lat: 0, lng: 0 },
+    web: accommendation.refID ?? "",
+    address: accommendation.provider ?? "Google",
+    image: {
+      url: accommendation.imageUrl ?? "",
+      imageOwner: { title: "", url: "" /* avatar: "" */ },
+      width: null,
+      height: null,
+    },
+    //
+    cityId: 0,
+    gallery: [],
+    price: 5,
+    rating: 5,
+    ratingCount: 0,
+    phone: null,
+    bookings: [],
+    category: [],
+    tags: [],
+    mustTries: [],
+    cuisines: null,
+    attention: null,
+    hours: null,
+    closed: [],
+    distance: null,
+    status: true,
+    safety: [],
+    offers: [],
+  };
+
+  const accommendationStep: Model.Step = {
+    id: 0,
+    poi: accommendationPoi,
+    alternatives: [],
+    order: -1,
+    score: null,
+    scoreDetails: [],
+    times: { from: "", to: "" },
+  };
+
+  return accommendationStep;
+};
+
+interface IStepList {
+  planDayIndex: number;
+  changePlanDayIndex: (newPlanDayIndex: number) => void;
+  alternativesStepId?: number;
+  setAlternativesStepId: (stepId?: number) => void;
+  showExplorePlaces: () => void;
+  showLocalExperiences: () => void;
+}
+
+const StepList: FC<IStepList> = ({ planDayIndex, changePlanDayIndex, alternativesStepId, setAlternativesStepId, showExplorePlaces, showLocalExperiences }) => {
+  const [sortStepList, setSortStepList] = useState<boolean>(false);
+  const [sortedStepList, setSortedStepList] = useState<Array<number>>([]);
+  const [legsOffset, setLegsOffset] = useState<number>(0);
+
+  const { tripReference } = useTrip();
+  const { plans, planUpdateOrders, planUpdateTime } = usePlan();
+  const { stepReplace, stepDelete } = useStep();
+  const { alternatives } = useAlternative();
+  const { reactions, reactionAdd, reactionDelete, loadingReactionStep } = useReaction();
+  const { focusStep, focusAlternative, focusLost } = useFocus();
+
+  const plan = useMemo(() => (plans ? plans[planDayIndex] : undefined), [planDayIndex, plans]);
+  const plansIdDate = useMemo(() => plans?.map((p) => ({ id: p.id, date: p.date })) || [], [plans]);
+
+  const {
+    /* accommendation, arrivalDateTime, cityId, plan, */
+    /* plans, */ /* alternatives, */
+    /* alternativesStepId, */ legs /*  planRefs, */,
+    /* day, */
+  } = useSelector((state: ICombinedState) => ({
+    // accommendation: state.trip.data?.tripProfile.accommodation,
+    // arrivalDateTime: state.trip.data?.tripProfile.arrivalDatetime,
+    // cityId: state.trip.data?.city.id || 0,
+    // hash: state.trip.hash, redux state undefined
+    // plans: state.trip.data?.plans,
+    // // plan: state.trip.data?.plans[state.trip.day],
+    // alternatives: state.trip.alternatives,
+    /* alternativesStepId: state.trip.alternativesStepId, */
+    legs: state.gmap.legs,
+    // day: state.trip.day,
+    // tripArrivalDatetime: state.trip.data?.tripProfile.arrivalDatetime,
+    // tripDepartureDatetime: state.trip.data?.tripProfile.departureDatetime,
+    // planRefs: state.trip.data?.plans.map((planRef) => ({ id: planRef.id, date: planRef.date })),
+  }));
+
+  // const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (tripReference?.tripProfile.accommodation) setLegsOffset(1);
+    else setLegsOffset(0);
+  }, [tripReference]);
+
+  useEffect(() => {
+    setSortStepList(false);
+    setSortedStepList([]);
+  }, [plan]);
+
+  // step current reactions
+  const memoizedThumbs = useCallback(
+    (step: Model.Step) => {
+      let t = 0;
+      const stepReaction = reactions?.find((userReaction) => userReaction.stepId === step.id && userReaction.poiId === step.poi.id);
+      if (stepReaction) {
+        if (stepReaction.reaction === Model.REACTION.THUMBS_UP) {
+          t = 1;
+        } else if (stepReaction.reaction === Model.REACTION.THUMBS_DOWN) {
+          t = -1;
+        } else {
+          // eslint-disable-next-line no-console
+          console.warn("unknown step reaction", stepReaction.reaction);
+        }
+      } else {
+        // console.log('no step reaction', step.id);
+      }
+      return t;
+    },
+    [reactions]
+  );
+
+  const memoizedThumbsClicked = useCallback(
+    (step: Model.Step, thumbs: number) => {
+      const userReactionRequest: Model.UserReactionRequest = {
+        stepId: step.id,
+        poiId: step.poi.id,
+        reaction: Model.REACTION.THUMBS_UP,
+      };
+      if (thumbs === -1) userReactionRequest.reaction = Model.REACTION.THUMBS_DOWN;
+      reactionAdd(userReactionRequest);
+    },
+    [reactionAdd]
+  );
+
+  const memoizedThumbsUndo = useCallback(
+    (step: Model.Step) => {
+      const stepUserReaction = reactions?.find((userReaction) => userReaction.stepId === step.id);
+      if (stepUserReaction) {
+        reactionDelete(stepUserReaction.id, stepUserReaction.stepId || 0);
+      } else {
+        // eslint-disable-next-line no-console
+        console.error(`StepCard.ThumbsUndo called with =${step.id}`);
+      }
+    },
+    [reactions, reactionDelete]
+  );
+
+  const emptyPlanMessage = () => {
+    let message = "Add places to your itinerary.";
+
+    if (plans && plan) {
+      if (planDayIndex === 0 && plan.generatedStatus === -1) {
+        message = "No recommendations due to arrival time.";
+      } else if (planDayIndex === plans.length - 1 && plans[plans.length - 1].generatedStatus === -1) {
+        message = "No recommendations due to departure time.";
+      }
+    }
+
+    return message;
+  };
+
+  const alternativeDayNumbers = (alternativePois: Model.Poi[]): number[][] => {
+    const getDayNumbers = (poiId: number): number[] => {
+      if (poiId < 1) return [];
+
+      const partOfDayNumbers: number[] = [];
+      if (plans) {
+        for (let i = 0; i < plans.length; i += 1) {
+          const stepIndex = plans[i].steps.findIndex((step) => step.poi.id === poiId);
+          if (stepIndex > -1) {
+            // console.log('alternativeDayNumbers dayNumber', stepIndex + 1);
+            partOfDayNumbers.push(i + 1);
+          }
+        }
+        return partOfDayNumbers;
+      }
+      return [];
+    };
+
+    return alternativePois.map((ap) => getDayNumbers(ap.id));
+  };
+
+  const windowOpenBookARide = (leg: RouteResult.ILeg) => {
+    const bookARideUrl =
+      leg.travel.between && leg.travel.between.pickup.coordinate
+        ? `https://m.uber.com/?client_id=StrtxTcD7VgyYiUZyXF3-ViEhhkLzhZp&action=setPickup&pickup[latitude]=${leg.travel.between.pickup.coordinate.lat}&pickup[longitude]=${leg.travel.between.pickup.coordinate.lng}&pickup[nickname]=${leg.travel.between.pickup.nickname}&pickup[formatted_address]=${leg.travel.between.pickup.formatted_address}&dropoff[latitude]=${leg.travel.between.dropoff.coordinate.lat}&dropoff[longitude]=${leg.travel.between.dropoff.coordinate.lng}&dropoff[nickname]=${leg.travel.between.dropoff.nickname}&dropoff[formatted_address]=${leg.travel.between.dropoff.formatted_address}`
+        : "https://m.uber.com";
+    window.open(bookARideUrl);
+  };
+
+  const defaultStepList =
+    plan?.steps.length === 0 ? (
+      <div className="m10">{emptyPlanMessage()}</div>
+    ) : (
+      <>
+        {tripReference?.tripProfile.accommodation && legs[0] ? (
+          <div className={classes.startAccommendation}>
+            <DirectionInfo
+              distance={legs[0].distance.text}
+              direction={legs[0].duration.text}
+              travel={legs[0].travel}
+              bookaride={() => {
+                windowOpenBookARide(legs[0]);
+              }}
+              hideBookaRide={!window.tconfig.SHOW_BOOK_A_RIDE}
+            />
+          </div>
+        ) : null}
+        {plan?.steps
+          ?.sort((a, b) => a.order - b.order)
+          .map((step, stepIndex) => {
+            const stepAltertives = alternatives?.find((a) => a.stepId === step.id);
+            const alternativePois = stepAltertives ? stepAltertives.pois : [];
+
+            return (
+              <div key={step.id} className={classes.stepListCards}>
+                <DefaultStepCard
+                  key={step.id}
+                  step={step}
+                  clicked={focusStep}
+                  alternativePois={alternativePois}
+                  alternativePoisDays={alternativeDayNumbers(alternativePois)}
+                  showAlternatives={alternativesStepId === step.id}
+                  showAlternativesChange={(stepId, show) => {
+                    setAlternativesStepId(show ? stepId : undefined);
+                  }}
+                  alternativePoiCardClicked={(alternativePoi) => {
+                    focusAlternative(step.id, alternativePoi);
+                  }}
+                  alternativeReplace={(alternativePoi) => {
+                    focusLost();
+                    stepReplace(step.id, alternativePoi.id);
+                  }}
+                  thumbs={memoizedThumbs(step)}
+                  thumbsClicked={(like) => {
+                    memoizedThumbsClicked(step, like);
+                  }}
+                  thumbsLoading={loadingReactionStep(step.id)}
+                  userReactionUndo={() => {
+                    memoizedThumbsUndo(step);
+                    setAlternativesStepId(undefined);
+                  }}
+                  userReactionRemoveStep={() => stepDelete(step.id)}
+                />
+                {legs[stepIndex + legsOffset] ? (
+                  <DirectionInfo
+                    distance={legs[stepIndex + legsOffset].distance.text}
+                    direction={legs[stepIndex + legsOffset].duration.text}
+                    travel={legs[stepIndex + legsOffset].travel}
+                    bookaride={() => {
+                      windowOpenBookARide(legs[stepIndex + legsOffset]);
+                    }}
+                    hideBookaRide={!window.tconfig.SHOW_BOOK_A_RIDE}
+                  />
+                ) : null}
+              </div>
+            );
+          })}
+      </>
+    );
+
+  const sortableStepList = (
+    <SortableStepList
+      steps={plan?.steps || []}
+      callbackSortableStepList={(list) => {
+        setSortedStepList(list);
+      }}
+    />
+  );
+
+  const stepList = sortStepList ? sortableStepList : defaultStepList;
+  const accommendationMemo = useMemo(() => {
+    if (tripReference?.tripProfile.accommodation) {
+      const { accommodation } = tripReference.tripProfile;
+
+      return (
+        <div className="px2">
+          <AccommondationCard
+            accommodation={accommodation}
+            clicked={() => {
+              if (!sortStepList) {
+                const accommendationStep = getAccommendationStep(accommodation);
+                focusStep(accommendationStep);
+              }
+            }}
+          />
+        </div>
+      );
+    }
+    return null;
+  }, [tripReference, sortStepList, focusStep]);
+
+  /* const flightMemo = useMemo(() => {
+    if (tripReference) {
+      if (window.tconfig.DEMO && demoData.cityId === tripReference.city.id && tripReference.tripProfile.accommodation && planDayIndex === 0) {
+        const { accommodation } = tripReference.tripProfile;
+
+        return (
+          <div className="px2">
+            <FlightCard
+              airportName={demoData.flightCard.airportAccommendationLeg.travel.between?.pickup.nickname || ""}
+              arrivalTime={moment(tripReference.tripProfile.arrivalDatetime).utcOffset(0).format("HH:mm A")}
+              checkinDetail={demoData.flightCard.checkinDetail}
+            />
+            <DirectionInfo
+              distance={demoData.flightCard.airportAccommendationLeg.distance.text}
+              direction={demoData.flightCard.airportAccommendationLeg.duration.text}
+              travel={{
+                text: demoData.flightCard.airportAccommendationLeg.travel.text,
+                value: demoData.flightCard.airportAccommendationLeg.travel.value,
+              }}
+              bookaride={() => {
+                const airportAccommendationLeg: RouteResult.ILeg = {
+                  ...demoData.flightCard.airportAccommendationLeg,
+                };
+                if (airportAccommendationLeg.travel.between && accommodation.coordinate && accommodation.name && accommodation.address) {
+                  airportAccommendationLeg.travel.between.dropoff.coordinate = accommodation.coordinate;
+                  airportAccommendationLeg.travel.between.dropoff.nickname = accommodation.name;
+                  airportAccommendationLeg.travel.between.dropoff.formatted_address = accommodation.address;
+                }
+                windowOpenBookARide(airportAccommendationLeg);
+              }}
+              hideBookaRide={!window.tconfig.SHOW_BOOK_A_RIDE}
+            />
+          </div>
+        );
+      }
+    }
+
+    return null;
+  }, [planDayIndex, tripReference]); */
+
+  return (
+    <>
+      <div className={`row mt4 mb0 ${classes.borderBottomLight} ${classes.stepListMain} `}>
+        {/* DAY SELECT */}
+        <div className="col col12 col4-m mb4 center" style={{ fontWeight: 600 }}>
+          {plansIdDate.length > 0 ? (
+            // <div className="row m0 p0">
+            //   <div className="col col2 mt1">
+            //     <SvgIcons.Calendar />
+            //   </div>
+            // <div className="col col10">
+            <PlanChangeDay options={plansIdDate} defaultIndex={planDayIndex} onDayChange={changePlanDayIndex} />
+          ) : // </div>
+          // </div>
+          null}
+        </div>
+
+        {/* EXPLORE PLACES */}
+        <div className="col col4 hide-s mb4 center">
+          <div className={classes.searchToursButton} onClick={showExplorePlaces} onKeyPress={() => {}} role="button" tabIndex={0}>
+            <svg className={classes.stepListSvg} viewBox="0 0 60 60">
+              <path d="M26.34375,46.6774902c3.5999756,0,7.1799927-0.9599609,10.3699951-2.8499756l8.6900024,8.6900024  c0.9500122,0.9500122,2.2199707,1.4799805,3.5599976,1.4799805c1.3499756,0,2.6099854-0.5299683,3.5599976-1.4799805  c1.960022-1.960022,1.960022-5.1500244,0-7.1099854l-8.6900024-8.7000122c4.6199951-7.7999878,3.6099854-18.0499878-3.0999756-24.75  c-7.9300537-7.9400024-20.8400269-7.9400024-28.7800293,0c-7.9299927,7.9299927-7.9299927,20.8399658,0,28.7699585  C15.9237061,44.6975098,21.133728,46.6774902,26.34375,46.6774902z M13.3737183,13.3674927  c7.1500244-7.1499634,18.7900391-7.1499634,25.9500122,0c7.1500244,7.1500244,7.1500244,18.7999878,0,25.9500122  c-7.1599731,7.1500244-18.7999878,7.1500244-25.9500122,0C6.2137451,32.1674805,6.2137451,20.5175171,13.3737183,13.3674927z" />
+              <path d="M26.34375,38.3574829c0.289978,0,0.5599976-0.1199951,0.75-0.3299561  c0.8699951-0.9700317,8.5100098-9.6400146,8.5100098-14.4500122c0-5.1000366-4.1500244-9.25-9.2600098-9.25  c-5.1000366,0-9.2600098,4.1499634-9.2600098,9.25c0,4.8099976,7.6500244,13.4799805,8.5200195,14.4500122  C25.7937622,38.2374878,26.0637207,38.3574829,26.34375,38.3574829z M21.9937134,23.5775146  c0-2.3900146,1.960022-4.3400269,4.3500366-4.3400269c2.3999634,0,4.3499756,1.9500122,4.3499756,4.3400269  c0,2.3999634-1.9500122,4.3499756-4.3499756,4.3499756C23.9537354,27.9274902,21.9937134,25.977478,21.9937134,23.5775146z" />
+            </svg>
+            <span>Explore Places</span>
+          </div>
+        </div>
+
+        {/* LOCAL EXPERINCES */}
+        {window.tconfig.PROVIDERS.tourAndTicket.length > 0 ? (
+          <div className="col col4 hide-s mb4 center">
+            <div className={classes.searchToursButton} onClick={showLocalExperiences} onKeyPress={() => {}} role="button" tabIndex={0}>
+              <svg className={classes.stepListSvg} viewBox="0 0 24 24">
+                <g>
+                  <path d="M19,20H5c-1.654,0-3-1.346-3-3V9c0-1.654,1.346-3,3-3h1.586l1-1C8.165,4.421,9.182,4,10,4h4c0.818,0,1.835,0.421,2.414,1   l1,1H19c1.654,0,3,1.346,3,3v8C22,18.654,20.654,20,19,20z M5,8C4.448,8,4,8.448,4,9v8c0,0.552,0.448,1,1,1h14c0.552,0,1-0.448,1-1   V9c0-0.552-0.448-1-1-1h-2c-0.266,0-0.52-0.105-0.707-0.293L15,6.414C14.799,6.213,14.285,6,14,6h-4C9.715,6,9.201,6.213,9,6.414   L7.707,7.707C7.52,7.895,7.266,8,7,8H5z" />
+                </g>
+                <g>
+                  <path d="M12,10c1.379,0,2.5,1.121,2.5,2.5S13.379,15,12,15s-2.5-1.121-2.5-2.5S10.621,10,12,10 M12,9c-1.934,0-3.5,1.566-3.5,3.5   c0,1.932,1.566,3.5,3.5,3.5s3.5-1.568,3.5-3.5C15.5,10.566,13.934,9,12,9z" />
+                </g>
+                <g>
+                  <path d="M18,8.699c-0.719,0-1.3,0.582-1.3,1.301s0.581,1.299,1.3,1.299s1.3-0.58,1.3-1.299S18.719,8.699,18,8.699z" />
+                </g>
+              </svg>
+              <span>Local Experiences</span>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <div className={`${classes.stepList} scrollable-y`}>
+        {/* TIMEFRAME */}
+        <div className="row my2">
+          <div className="col col10 col10-m mb0 pb0">
+            <StepTimeframe
+              defaultTimeframe={{
+                startTime: plan?.startTime || "09:00",
+                endTime: plan?.endTime || "21:00",
+              }}
+              callbackStepTimeframe={(timeframe) => {
+                if (plan) planUpdateTime(plan.id, timeframe.startTime, timeframe.endTime);
+              }}
+            />
+          </div>
+
+          {/* MANUEL SORT */}
+          {plan?.steps.length === 0 ? null : (
+            <div className={`col col2 col2-m mb0 pb0 ${classes.switchCenter}`}>
+              <div className={classes.switch}>
+                <Switch
+                  value={sortStepList}
+                  onchange={(value) => {
+                    setSortStepList(value);
+                    if (!value && sortedStepList.length > 0 && plan) planUpdateOrders(plan.id, sortedStepList);
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        {/* {flightMemo} */}
+        {accommendationMemo}
+        {stepList}
+        {plan?.steps.length === 0 ? null : accommendationMemo}
+      </div>
+    </>
+  );
+};
+
+export default StepList;

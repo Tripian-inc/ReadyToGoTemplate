@@ -27,6 +27,21 @@ export const changeFocusedCarRentOffer = (carRentOffer: Providers.Bb.SearchCarRe
   payload: { carRentOffer },
 });
 
+export const changeFocusedProviderTour = (providerTour: Providers.Rezdy.Product): IAction => ({
+  type: FOCUS_ACTIONS.CHANGE_FOCUSED_PROVIDER_TOUR,
+  payload: { providerTour },
+});
+
+export const changeFocusedProviderVideo = (providerVideo: Providers.Videreo.ResponseResult): IAction => ({
+  type: FOCUS_ACTIONS.CHANGE_FOCUSED_PROVIDER_VIDEO,
+  payload: { providerVideo },
+});
+
+export const changeFocusedProviderEvent = (providerEvent: Providers.Victory.Event): IAction => ({
+  type: FOCUS_ACTIONS.CHANGE_FOCUSED_PROVIDER_EVENT,
+  payload: { providerEvent },
+});
+
 export const clearFocus = (): IAction => ({
   type: FOCUS_ACTIONS.CLEAR_FOCUS,
   payload: undefined,

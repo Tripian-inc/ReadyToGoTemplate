@@ -7,15 +7,15 @@ import { saveNotification } from "../redux/action/user";
 
 const usePoiCategory = () => {
   const [loadingPoiCategories, setLoadingPoiCategories] = useState<boolean>(true);
-  const [poiCategories, setPoiCategories] = useState<Model.PoiCategory[]>([]);
+  const [poiCategoryGroups, setPoiCategoryGroups] = useState<Model.PoiCategoryGroup[]>([]);
 
   const dispatch = useDispatch();
 
   useEffect(() => {
     api
       .poiCategories()
-      .then((pCategories: Model.PoiCategory[]) => {
-        setPoiCategories(pCategories);
+      .then((pCategories: Model.PoiCategoryResponse) => {
+        setPoiCategoryGroups(pCategories.groups);
       })
 
       .catch((poiCategoriesError) => {
@@ -27,7 +27,7 @@ const usePoiCategory = () => {
       });
   }, [dispatch]);
 
-  return { poiCategories, loadingPoiCategories };
+  return { poiCategoryGroups, loadingPoiCategories };
 };
 
 export default usePoiCategory;

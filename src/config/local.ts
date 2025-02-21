@@ -96,6 +96,8 @@ const staticLocalConfig: IConfig = {
   LOGIN_WITH_HASH: false,
   SAVE_SESSION: true,
 
+  WIDGET_THEME_1: false,
+
   /**
    * Providers
    */
@@ -116,8 +118,11 @@ const staticLocalConfig: IConfig = {
   RESTAURANT_RESERVATION_PROVIDER_IDS: [],
   ACCOMMODATION_PROVIDER_ID: Model.PROVIDER_ID.BOOK_BARBADOS, // If SHOW_ACCOMMODATION_POIS === false, will ignore it
   CAR_RENT_PROVIDER_ID: Model.PROVIDER_ID.BOOK_BARBADOS, // If SHOW_CAR_RENT_POIS === false, will ignore it
+
+  SOCIAL_LOGIN: false,
+
   T: {
-    lang_codes: [],
+    langCodes: [],
     translations: {},
   },
 };

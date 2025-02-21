@@ -36,6 +36,24 @@ class ErrorHandling {
       </div>
     );
   };
+
+  /* 
+  myErrorHandler = (error, info) => {
+    // Do something with the error
+    // E.g. log to an error logging client here
+    console.log(`Error: ${error}. Info:`);
+    console.log(info);
+  };
+
+  ErrorFallback = ({ error, resetErrorBoundary }) => {
+    return (
+      <>
+        <p>Something went wrong:</p>
+        <pre>{error.message}</pre>
+        <button onClick={resetErrorBoundary}>Try again</button>
+      </>
+    );
+  }; */
 }
 
 export default ErrorHandling;

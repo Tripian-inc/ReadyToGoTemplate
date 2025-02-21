@@ -1,21 +1,26 @@
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import moment from "moment";
-
 import Model from "@tripian/model";
 import { api } from "@tripian/core";
 import ICombinedState from "../redux/model/ICombinedState";
 import { saveNotification, changeLoadingOffers, changeOffers } from "../redux/action/trip";
+import useAuth from "./useAuth";
+import useTranslate from "./useTranslate";
 
 const useMyOffers = () => {
   const [loadingMyOffers, setLoadingMyOffers] = useState<{ optIn: number[]; optOut: number[] }>({ optIn: [], optOut: [] });
-  const { tripReference, myAllOffers, loadingMyAllOffers, readOnlyTrip } = useSelector((state: ICombinedState) => ({
+  const { tripReference, myAllOffers, loadingMyAllOffers } = useSelector((state: ICombinedState) => ({
     tripReference: state.trip?.reference,
     myAllOffers: state.trip.offers,
     loadingMyAllOffers: state.trip.loading.offers,
-    readOnlyTrip: state.trip.readOnly,
   }));
+
+  const { isLoggedIn } = useAuth();
+
   const dispatch = useDispatch();
+
+  const { t } = useTranslate();
 
   const isLoadingOffer = useCallback(
     (offerId: number) => loadingMyOffers.optIn.includes(offerId) || loadingMyOffers.optOut.includes(offerId),
@@ -24,49 +29,52 @@ const useMyOffers = () => {
 
   // const loadingOfferIdList = useMemo(() => loadingMyOffers.optIn.concat(loadingMyOffers.optOut), [loadingMyOffers.optIn, loadingMyOffers.optOut]);
 
-  const offersFetch = useCallback(async (): Promise<Model.Offer[]> => {
-    if (tripReference?.tripProfile.arrivalDatetime && tripReference?.tripProfile.departureDatetime && readOnlyTrip === false) {
-      const dateFrom = moment(tripReference.tripProfile.arrivalDatetime).format("YYYY-MM-DD"); //  2023-06-01
-      const dateTo = moment(tripReference.tripProfile.departureDatetime).format("YYYY-MM-DD"); //  2023-07-01
+  const offersOptInFetch = useCallback(async (): Promise<Model.Poi[]> => {
+    const arrivalDatetime = tripReference?.tripProfile?.arrivalDatetime;
+    const departureDatetime = tripReference?.tripProfile?.departureDatetime;
+
+    if (arrivalDatetime && departureDatetime && isLoggedIn) {
+      const dateFrom = moment(arrivalDatetime).format("YYYY-MM-DD");
+      const dateTo = moment(departureDatetime).format("YYYY-MM-DD");
 
       dispatch(changeLoadingOffers(true));
 
-      return api
-        .offers(dateFrom, dateTo)
-        .then((offers) => {
-          dispatch(changeOffers(offers));
-          return offers;
-        })
-        .catch((fetchOffersError) => {
-          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "fetchOffersError", "Fetch Offers", fetchOffersError));
-
-          return fetchOffersError;
-        })
-        .finally(() => {
-          dispatch(changeLoadingOffers(false));
-        });
+      try {
+        const offers = await api.offersOptIn(dateFrom, dateTo);
+        dispatch(changeOffers(offers));
+        return offers;
+      } catch (fetchOffersError: any) {
+        dispatch(changeOffers([]));
+        dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "fetchOffersError", fetchOffersError));
+        return [];
+      } finally {
+        dispatch(changeLoadingOffers(false));
+      }
     }
 
     // eslint-disable-next-line no-console
-    console.warn("fetchOffers called with undefined tripReference");
+    console.warn("offersOptInFetch called without valid tripReference");
     return Promise.resolve([]);
-  }, [dispatch, tripReference?.tripProfile.arrivalDatetime, tripReference?.tripProfile.departureDatetime, readOnlyTrip]);
+  }, [tripReference, isLoggedIn, dispatch]);
 
   const offerOptIn = useCallback(
-    async (offerId: number, optInDate: string): Promise<void> => {
+    async (offerId: number, optInDateTime: string): Promise<void> => {
       setLoadingMyOffers((prevLoading) => ({ ...prevLoading, optIn: [...prevLoading.optIn, offerId] }));
 
       await api
-        .offerUpdateOptIn(offerId, optInDate)
+        .offerUpdateOptIn(offerId, optInDateTime)
         .then((deleteUpdateResponse: Model.DeleteUpdateResponse) => {
-          // console.log(deleteUpdateResponse.updated);
-          return offersFetch().then((userOffers: Model.Offer[]) => {
-            // console.log(123);
-            return userOffers;
-          });
+          if (deleteUpdateResponse.updated === true) {
+            dispatch(saveNotification(Model.NOTIFICATION_TYPE.SUCCESS, "offerOptIn", t("trips.myTrips.itinerary.offers.myOffers.success.succesfullyMade")));
+            return offersOptInFetch().then((userOffers: Model.Poi[]) => {
+              return userOffers;
+            });
+          } else {
+            dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "offerOptIn", t("trips.myTrips.itinerary.offers.myOffers.error.optInCouldntMade")));
+          }
         })
         .catch((optInOfferError) => {
-          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "offerOptIn", "Opt In Offer", optInOfferError));
+          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "offerOptIn", optInOfferError));
           // throw optInOfferError;
         })
         .finally(() => {
@@ -78,7 +86,8 @@ const useMyOffers = () => {
           });
         });
     },
-    [dispatch, offersFetch]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dispatch, offersOptInFetch]
   );
 
   const offerOptOut = useCallback(
@@ -88,14 +97,12 @@ const useMyOffers = () => {
       await api
         .offerDelete(offerId)
         .then((deleteUpdateResponse: Model.DeleteUpdateResponse) => {
-          console.log(deleteUpdateResponse.updated);
-          return offersFetch().then((userOffers: Model.Offer[]) => {
-            // console.log(456);
+          return offersOptInFetch().then((userOffers: Model.Poi[]) => {
             return userOffers;
           });
         })
         .catch((optOutOfferError) => {
-          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "offerOptOut", "Opt Out Offer", optOutOfferError));
+          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "offerOptOut", optOutOfferError));
           // throw optOutOfferError;
         })
         .finally(() => {
@@ -107,7 +114,7 @@ const useMyOffers = () => {
           });
         });
     },
-    [dispatch, offersFetch]
+    [dispatch, offersOptInFetch]
   );
 
   useEffect(() => {
@@ -117,8 +124,8 @@ const useMyOffers = () => {
       tripReference?.tripProfile.arrivalDatetime !== undefined &&
       tripReference?.tripProfile.departureDatetime !== undefined
     )
-      offersFetch();
-  }, [loadingMyAllOffers, myAllOffers, offersFetch, tripReference?.tripProfile.arrivalDatetime, tripReference?.tripProfile.departureDatetime]);
+      offersOptInFetch();
+  }, [loadingMyAllOffers, myAllOffers, offersOptInFetch, tripReference?.tripProfile.arrivalDatetime, tripReference?.tripProfile.departureDatetime]);
 
   return { loadingMyAllOffers, myAllOffers, offerOptIn, offerOptOut, isLoadingOffer };
 };

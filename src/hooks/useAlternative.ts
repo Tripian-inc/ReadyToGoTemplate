@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import Model from "@tripian/model";
@@ -7,6 +7,7 @@ import { api } from "@tripian/core";
 import ICombinedState from "../redux/model/ICombinedState";
 import IStepAlternatives from "../models/IStepAlternatives";
 import { changeAlternatives, changeLoadingAlternatives, saveNotification } from "../redux/action/trip";
+import { useParams } from "react-router";
 
 const useAlternative = () => {
   const { plans, alternatives, loadingAlternatives } = useSelector((state: ICombinedState) => ({
@@ -15,6 +16,13 @@ const useAlternative = () => {
     loadingAlternatives: state.trip.loading.alternatives,
   }));
   const dispatch = useDispatch();
+
+  const { hashParam } = useParams<{ hashParam: string }>();
+
+  const shared = useMemo(() => {
+    const params = hashParam.split("!");
+    return params.length > 1 && hashParam.split("!")[1] === "s";
+  }, [hashParam]);
 
   const alternativesFetch = useCallback(
     (dayIndex: number): Promise<IStepAlternatives[]> => {
@@ -39,7 +47,7 @@ const useAlternative = () => {
 
       dispatch(changeLoadingAlternatives(true));
       return api
-        .pois(alternativePoiIds)
+        .pois(alternativePoiIds, Number(!shared))
         .then((alternativePois: Model.Poi[]) => {
           const newAternatives: IStepAlternatives[] = [];
           steps.forEach((s) => {
@@ -62,7 +70,7 @@ const useAlternative = () => {
           dispatch(changeLoadingAlternatives(false));
         });
     },
-    [dispatch, plans]
+    [dispatch, plans, shared]
   );
 
   return { alternatives, alternativesFetch, loadingAlternatives };

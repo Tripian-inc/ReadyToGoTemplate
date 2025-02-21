@@ -11,7 +11,6 @@ import "./App.scss";
 
 const App = (): JSX.Element => {
   useScript(window.tconfig.GOOGLE_ANALYTICS_URL || "");
-
   const { getLocalData } = useLocalStorage<"light" | "dark">("theme");
   const theme = getLocalData();
 

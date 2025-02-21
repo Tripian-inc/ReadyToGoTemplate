@@ -1,0 +1,23 @@
+.feedbackWrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  .feedbacks {
+    width: 60%;
+    padding: 1rem;
+    border: 1px solid #dbdbdb;
+    margin-top: 2rem;
+    border-radius: 0.5rem;
+  }
+}
+
+.loadingWrapper {
+  width: 100;
+  margin-top: 10%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+

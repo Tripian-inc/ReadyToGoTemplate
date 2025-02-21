@@ -7,6 +7,7 @@ import Model from "@tripian/model";
 import { api } from "@tripian/core";
 import useUser from "../../hooks/useUser";
 import useTranslate from "../../hooks/useTranslate";
+import { Button } from "@tripian/react";
 
 const QrWriterPage = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -93,7 +94,7 @@ const QrWriterPage = () => {
 
   return (
     <div className={classes.qrWriter}>
-      <h1>{t("trips.myTrips.itinerary.offers.qrWriter.title")}</h1>
+      <div className={classes.qrWriterHeader}>{t("trips.myTrips.itinerary.offers.qrWriter.title")}</div>
       {error && (
         <p>
           {t("trips.myTrips.itinerary.offers.qrWriter.error.anErrorOccurred")}: {error}
@@ -108,7 +109,16 @@ const QrWriterPage = () => {
       {loading ? (
         <p>{"trips.myTrips.itinerary.offers.qrWriter.loading"}...</p>
       ) : (
-        <button onClick={() => history.push("/my-wallet")}>{t("trips.myTrips.itinerary.offers.qrWriter.back")}</button>
+        <Button
+          text={window.tconfig.SHOW_VOUCHER ? t("trips.myTrips.itinerary.offers.qrWriter.back") : "Go Back"}
+          onClick={() => {
+            if (window.tconfig.SHOW_VOUCHER) {
+              history.push("/my-wallet");
+            } else {
+              history.goBack();
+            }
+          }}
+        />
       )}
     </div>
   );

@@ -30,6 +30,21 @@ const focusReducer: Reducer<IFocusState, IAction> = (state: IFocusState = initia
         ...initialFocusState,
         carRentOffer: action.payload.carRentOffer,
       };
+    case ACTION_TYPES.CHANGE_FOCUSED_PROVIDER_TOUR:
+      return {
+        ...initialFocusState,
+        providerTour: action.payload.providerTour,
+      };
+    case ACTION_TYPES.CHANGE_FOCUSED_PROVIDER_VIDEO:
+      return {
+        ...initialFocusState,
+        providerVideo: action.payload.providerVideo,
+      };
+    case ACTION_TYPES.CHANGE_FOCUSED_PROVIDER_EVENT:
+      return {
+        ...initialFocusState,
+        providerEvent: action.payload.providerEvent,
+      };
     case ACTION_TYPES.CLEAR_FOCUS:
       return initialFocusState;
 

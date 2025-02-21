@@ -1,7 +1,7 @@
 @import "../../../pages/styleConst.scss";
 
 .tourInfo {
-  padding: 0.5rem 0;
+  // padding: 0.5rem 0;
   font-size: 0.9rem;
   background-color: var(--background-color);
 }
@@ -25,6 +25,14 @@
     line-height: 1.375rem;
   }
 }
+
+.viatorTourDetailsLoader {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%);
+}
+
+
 
 .gygTourInfoBack {
   margin-bottom: 1rem;
@@ -52,6 +60,12 @@
 @media screen and (min-width: $mobile-view-breakpoint) {
   .tourInfo {
     background-color: var(--background-color);
-    padding: 1rem 1.5rem;
+    // padding: 1rem 1.5rem;
+  }
+
+  .viatorTourDetailsLoader {
+    position: absolute;
+    left: 20rem;
+    transform: translate(-50%);
   }
 }

@@ -12,6 +12,12 @@ interface ISortableStepList {
   alternativeDayNumbers: (alternativePois: Model.Poi[]) => number[][];
   alternativesStepId?: number;
   showAlternativesChange: (stepId: number, show: boolean) => void;
+  showRemoveReplaceButtons?: boolean;
+  hideScore?: boolean;
+  hideStepsTime?: boolean;
+  hideFeatures?: boolean;
+  hideCuisine?: boolean;
+  isWidget?: boolean;
   alternativePoiCardClicked: (stepId: number, alternativePoi: Model.Poi) => void;
   alternativeReplace: (stepId: number, alternativePoi: Model.Poi) => void;
   // thumbs?: number;
@@ -25,6 +31,11 @@ interface ISortableStepList {
   legs: RouteResult.ILeg[];
   legsOffset: number;
   bookaride?: () => void;
+  gygTourIds: number[];
+  bbTourIds: number[];
+  viatorTourIds: string[];
+  toristyTourIds: string[];
+  toursLoading: boolean;
   callbackSortableStepList: (sortedList: Array<number>) => void;
   t: (value: Model.TranslationKey) => string;
   /* readOnlyTrip: boolean; */
@@ -37,6 +48,12 @@ const SortableStepList: React.FC<ISortableStepList> = ({
   alternativeDayNumbers,
   alternativesStepId,
   showAlternativesChange,
+  showRemoveReplaceButtons,
+  hideScore,
+  hideStepsTime,
+  hideFeatures,
+  hideCuisine,
+  isWidget,
   alternativePoiCardClicked,
   alternativeReplace,
   // thumbs,
@@ -50,6 +67,11 @@ const SortableStepList: React.FC<ISortableStepList> = ({
   legs,
   legsOffset,
   bookaride,
+  gygTourIds,
+  bbTourIds,
+  viatorTourIds,
+  toristyTourIds,
+  toursLoading,
   callbackSortableStepList,
   t,
   /* readOnlyTrip, */
@@ -75,21 +97,23 @@ const SortableStepList: React.FC<ISortableStepList> = ({
     <DragDropContext onDragEnd={onDragEnd}>
       <Droppable droppableId={"my-dropple-1"}>
         {(provided1) => (
-          <ul className="p-0 m-0" ref={provided1.innerRef} {...provided1.droppableProps}>
+          <ul className="p-0 m-0 flex flex-col gap-5" ref={provided1.innerRef} {...provided1.droppableProps}>
             {steps.map((step, stepIndex) => {
               const stepAltertives = alternatives?.find((a) => a.stepId === step.id);
               const alternativePois = stepAltertives ? stepAltertives.pois : [];
               const alternativePoisDays: number[][] = alternativeDayNumbers(alternativePois);
 
               return (
-                <Draggable /* isDragDisabled={readOnlyTrip === true} */ key={step.id.toString()} draggableId={step.id.toString()} index={stepIndex}>
+                <Draggable isDragDisabled={isWidget} key={step.id.toString()} draggableId={step.id.toString()} index={stepIndex}>
                   {(provided2) => (
                     <li ref={provided2.innerRef} {...provided2.draggableProps} className="list-none z-50">
                       <div key={step.id}>
                         <div className={`flex pr-2`}>
-                          <div className="translate-y-16" {...provided2.dragHandleProps}>
-                            <SvgIcons.DragDrop size="1rem" className="md:mr-2" />
-                          </div>
+                          {!isWidget && (
+                            <div className="translate-y-16" {...provided2.dragHandleProps}>
+                              <SvgIcons.DragDrop size="1rem" className="md:mr-2" />
+                            </div>
+                          )}
 
                           <DefaultStepCard
                             key={step.id}
@@ -99,6 +123,12 @@ const SortableStepList: React.FC<ISortableStepList> = ({
                             alternativePoisDays={alternativePoisDays}
                             showAlternatives={alternativesStepId === step.id}
                             showAlternativesChange={showAlternativesChange}
+                            showRemoveReplaceButtons={showRemoveReplaceButtons}
+                            hideScore={hideScore}
+                            hideStepsTime={hideStepsTime}
+                            hideFeatures={hideFeatures}
+                            hideCuisine={hideCuisine}
+                            isWidget={isWidget}
                             alternativePoiCardClicked={(alternativePoi: Model.Poi) => alternativePoiCardClicked(step.id, alternativePoi)}
                             alternativeReplace={(alternativePoi: Model.Poi) => alternativeReplace(step.id, alternativePoi)}
                             thumbs={memoizedThumbs(step)}
@@ -107,11 +137,16 @@ const SortableStepList: React.FC<ISortableStepList> = ({
                             thumbsLoading={loadingReactionStep(step.id)}
                             userReactionUndo={() => userReactionUndo(step)}
                             userReactionRemoveStep={() => userReactionRemoveStep(step.id)}
+                            gygTourIds={gygTourIds}
+                            bbTourIds={bbTourIds}
+                            viatorTourIds={viatorTourIds}
+                            toristyTourIds={toristyTourIds}
+                            toursLoading={toursLoading}
                             t={t}
                           />
                         </div>
                         {legs[stepIndex + legsOffset] ? (
-                          <div className="ml-6 py-4">
+                          <div className="ml-6 pt-4">
                             <DirectionInfo
                               distance={legs[stepIndex + legsOffset].distance.text}
                               direction={legs[stepIndex + legsOffset].duration.text}

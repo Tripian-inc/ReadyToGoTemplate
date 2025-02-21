@@ -9,6 +9,7 @@ import Model from "@tripian/model";
 import ICombinedState from "../../redux/model/ICombinedState";
 import { hideNotification as hideNotificationUser } from "../../redux/action/user";
 import { hideNotification as hideNotificationTrip } from "../../redux/action/trip";
+import useTranslate from "../../hooks/useTranslate";
 
 interface INotify {
   positionX?: "left" | "center" | "right";
@@ -22,6 +23,8 @@ const Notify: React.FC<INotify> = ({ positionX = "right", positionY = "top" }) =
   }));
   const dispatch = useDispatch();
 
+  const { t } = useTranslate();
+
   const shownUserNotification = useMemo(() => userNotifications.find((notification) => notification.hide === false), [userNotifications]);
 
   const shownTripNotification = useMemo(() => tripNotifications.find((notification) => notification.hide === false), [tripNotifications]);
@@ -31,7 +34,6 @@ const Notify: React.FC<INotify> = ({ positionX = "right", positionY = "top" }) =
     id: number;
     type: Model.NOTIFICATION_TYPE;
     functionName: string;
-    title: string;
     message: string;
     closeMs: number;
     hide: boolean;
@@ -56,7 +58,7 @@ const Notify: React.FC<INotify> = ({ positionX = "right", positionY = "top" }) =
         type={shownMessage.type}
         positionX={positionX}
         positionY={positionY}
-        title={`${shownMessage.title} ${shownMessage.type}`}
+        title={`${t(`${shownMessage.type}`)}`}
         // eslint-disable-next-line no-constant-condition
         message={typeof (shownMessage.message === "string") ? shownMessage.message : JSON.stringify(shownMessage.message)}
         onClose={() => {

@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import * as ROUTER_PATH_TITLE from "../constants/ROUTER_PATH_TITLE";
-import Model from "@tripian/model";
+import Model, { helper } from "@tripian/model";
 import { api } from "@tripian/core";
 import {
   changeLoadingPlans,
@@ -19,16 +19,19 @@ import {
 import useUser from "./useUser";
 import ICombinedState from "../redux/model/ICombinedState";
 import { useHistory } from "react-router";
+import { changeTripReferences } from "../redux/action/user";
 
 const useTrip = () => {
   const [loadingTripAdd, setLoadingTripAdd] = useState<boolean>(false);
   const [loadingTripUpdate, setLoadingTripUpdate] = useState<boolean>(false);
+  const [loadingTripNameUpdate, setLoadingTripNameUpdate] = useState<boolean>(false);
   const [loadingTripDelete, setLoadingTripDelete] = useState<boolean>(false);
 
-  const { loadingTripReference, tripReference, tripReadOnly } = useSelector((state: ICombinedState) => ({
+  const { loadingTripReference, tripReference, tripReadOnly, tripReferences } = useSelector((state: ICombinedState) => ({
     loadingTripReference: state.trip.loading.reference,
     tripReference: state.trip.reference,
     tripReadOnly: state.trip.readOnly,
+    tripReferences: state.user.tripReferences,
   }));
   const dispatch = useDispatch();
   const history = useHistory();
@@ -76,6 +79,36 @@ const useTrip = () => {
         });
     },
     [dispatch, userTripReferencesFetch]
+  );
+
+  const tripNameUpdate = useCallback(
+    (tripHash: string, tripProfile: Model.TripProfile, minDayIndex = 0): Promise<void> => {
+      setLoadingTripNameUpdate(true);
+
+      return api
+        .tripNameUpdate(tripHash, tripProfile)
+        .then((tripData: Model.Trip) => {
+          const references = helper.deepCopy(tripReferences);
+          if (references) {
+            const referenceIndex = references?.findIndex((ref) => ref.tripHash === tripHash);
+            if (referenceIndex !== -1) {
+              references[referenceIndex] = {
+                ...references[referenceIndex],
+                tripProfile: tripData.tripProfile,
+              };
+              dispatch(changeTripReferences(references));
+            }
+          }
+        })
+        .catch((tripUpdateError) => {
+          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "tripNameUpdate", "Update Trip Name", tripUpdateError));
+          throw tripUpdateError;
+        })
+        .finally(() => {
+          setLoadingTripNameUpdate(false);
+        });
+    },
+    [dispatch, tripReferences]
   );
 
   const tripDelete = useCallback(
@@ -148,7 +181,7 @@ const useTrip = () => {
       dispatch(changeLoadingPlans(true));
 
       return api
-        .tripGetShared(hash)
+        .tripGetShared(hash, !window.tconfig.WIDGET_THEME_1)
         .then((trip: Model.Trip) => {
           tripFetchCallback(trip, true);
           return trip;
@@ -224,11 +257,13 @@ const useTrip = () => {
     loadingTripReference,
     loadingTripAdd,
     loadingTripUpdate,
+    loadingTripNameUpdate,
     loadingTripDelete,
     tripReference,
     tripReadOnly,
     tripAdd,
     tripUpdate,
+    tripNameUpdate,
     tripDelete,
     tripFetch /* , tripFetchWithRelational */,
     tripGetShared,

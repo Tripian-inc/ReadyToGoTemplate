@@ -103,7 +103,11 @@ export const setConfigList = async (): Promise<void> => {
    * Providers
    */
   window.tconfig.PROVIDERS = apiConfigList.providers;
-
+  // TEST
+  /* window.tconfig.PROVIDERS.tourAndTicket = [
+    { id: 4, name: "gyg", apiKey: "Yb8XauGtHKbBUEj4PGWRfrvzvmwKijdghHwWkjBVYTKmTFeR", apiUrl: "https://api.getyourguide.com/1", clientId: "", prod: true },
+    { id: 6, name: "bookbarbados", apiKey: "ZUlpNGTnPszqLXMWq0r0j66Q4eEkUV9sYRSsfg/8Cts=", apiUrl: "https://admin.bookbarbados.com/gptour/api", clientId: "", prod: true },
+  ]; */
   // TEST
   window.tconfig.SHOW_TOURS_AND_TICKETS = 0 < window.tconfig.PROVIDERS.tourAndTicket.length;
   window.tconfig.SHOW_RESTAURANT_RESERVATIONS = 0 < window.tconfig.PROVIDERS.restaurant.length;
@@ -150,13 +154,15 @@ export const setConfigList = async (): Promise<void> => {
   window.tconfig.SAVE_SESSION = apiConfigList.baseFeatures.saveSession;
   window.tconfig.QR_READER = apiConfigList.baseFeatures.qrReader;
 
+  window.tconfig.WIDGET_THEME_1 = apiConfigList.baseFeatures.widgetTheme1;
+
   const apiTranslationList = await getTranslationList();
 
   window.tconfig.T = apiTranslationList;
 
   let langCode = localStorage.getItem("language");
 
-  const langCodeKeys: string[] = window.tconfig.T.lang_codes.map((l) => l.value);
+  const langCodeKeys: string[] = window.tconfig.T.langCodes.map((l) => l.value);
 
   if (langCode === null || !langCodeKeys.includes(langCode)) {
     langCode = "en";
@@ -165,14 +171,52 @@ export const setConfigList = async (): Promise<void> => {
 
   window.twindow.langCode = langCode;
 
-  init(window.tconfig.TRIPIAN_API_URL, window.tconfig.TRIPIAN_API_KEY, undefined, false, langCode);
+  init(window.tconfig.TRIPIAN_API_URL, window.tconfig.TRIPIAN_API_KEY, undefined, true, langCode);
   /** Performance magic touch */
   api.citiesAll();
 
+  /**
+   * Muro
+   */
   type MessageEventData = {
     mode: "light" | "dark";
     data: { theme: Model.Theme; logo: { dark: string; light: string } };
   };
+
+  /* 
+  Test
+  const frame = document.getElementById('myframe');
+  const eventData = {
+    mode: "light",
+    data: {
+      dark: {
+        primary: "#e9314a",
+        secondary: "#ffeef0",
+        success: "#2da52deb",
+        warning: "#f9a938",
+        info: "#333232",
+        danger: "#e54e53",
+        textPrimary: "#f5f5f5",
+        background: "#140F21",
+        headerBg: "#140F21",
+        headerTextColor: "#f5f5f5",
+      },
+      light: {
+        primary: "#e9314a",
+        secondary: "#ffeef0",
+        success: "#2da52deb",
+        warning: "#f9a938",
+        info: "#333232",
+        danger: "#e54e53",
+        textPrimary: "#434b55",
+        background: "#ffffff",
+        headerBg: "#ffffff",
+        headerTextColor: "#00000",
+      },
+    },
+  };
+  frame.contentWindow.postMessage(eventData, "*"); 
+  */
 
   window.addEventListener("message", (event) => {
     // IMPORTANT: check the origin of the data!
@@ -200,7 +244,7 @@ export const setConfigList = async (): Promise<void> => {
 };
 
 export const getTranslationList = async (): Promise<Model.TranslationList> => {
-  return fetch(`${window.tconfig.TRIPIAN_API_URL}/misc/frontend-translations`, {
+  return fetch(`${window.tconfig.TRIPIAN_API_URL}/misc/frontend-translationsv2`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -208,6 +252,7 @@ export const getTranslationList = async (): Promise<Model.TranslationList> => {
     },
   })
     .then((response) => response.json())
+    .then((d) => d.data)
     .catch((err) => {
       console.error(`/misc/frontend-translations"`, err);
       throw new Error(`/misc/frontend-translations`, err);
@@ -219,6 +264,8 @@ const getLocalToken = async (): Promise<Model.Token | undefined> => {
   let localToken: Model.Token | undefined = undefined;
 
   if (window.tconfig.LOGIN_WITH_TOKEN) {
+    // http://localhost:3000/?access_token=eyJraWQiOiJcL2dMVURKRWlcL1hGZURLM1VnUWMzZ1VBU2NSTTJRd3E2ZmZSTnluWkE1RHM9IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJlMjU5MDg3Ni04M2M0LTQxNzYtYWUzMy0yNTlhOTZjMWE0NzYiLCJldmVudF9pZCI6IjE0Yjg3NWMwLTQ5YWEtNGI4Yi04MmE5LTU0ZDdhZWE3YjViMCIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoiYXdzLmNvZ25pdG8uc2lnbmluLnVzZXIuYWRtaW4iLCJhdXRoX3RpbWUiOjE2NTMwNDYwMDEsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS13ZXN0LTEuYW1hem9uYXdzLmNvbVwvZXUtd2VzdC0xX2lIVFhZS2paUyIsImV4cCI6MTY1NDI1NTc1NywiaWF0IjoxNjU0MTY5MzU3LCJqdGkiOiJjYTZkNmZlNC1kMDZlLTQwODMtYjQyMy0zZmJkNWJlOWZhMGUiLCJjbGllbnRfaWQiOiI3ZGZmcDAxM2pscTllYTRhYjBvZnF1a282aSIsInVzZXJuYW1lIjoiZTI1OTA4NzYtODNjNC00MTc2LWFlMzMtMjU5YTk2YzFhNDc2In0.MwhjSw_QIqh8nMmWcQnmIfp_oSYWA0l8xRFA0atEEDxmkx3YXz0InfilqQ0gF638ogh_UXNbo_6GgSdYOKWOTdqKQx1BPnE31c3M0r6NivFqet9iOH26CdjTbsvsvGYmKsVvv0eXsSG1h_PjFD4Bv9-Y_y5Ya52qbU4mKlkBk1BT12uAp9OaTabiIRGHdpvEc4KzrzU3RmPsVcWcBSdVEBhzV0PAOUItNdUoqpGgT_VyffPmvcVirpCFF1cpRHNYfsn7024vDssGnSSXrEIR1w1eEB4asxRgT9glqh_tUdTHSnlupDz-IX7kJ-FkEIQwD_2LDYQRN7Rde77CQjiQNQ&refresh_token=eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ.c-21drwjLdyi72VX15rzQPZyWDAd04BJ9Ydw-5zaY0kKa2nzfEhpBHTBUy05psE2MrWKOyt_-kk9Ifew4u2d0RfjSOnr71AfTocWtw6ml66JTBbC67D8qaey6k98L8TEO1RKn2NLKDml84yWlKw6yXk6p7zTM-lyMDcDzCuZ-xd87jT7vdHRuRxBz2suaV-yb9cwlkhw7lCMqHu7_O8l-a0aF9xTIIbgREYEydzbwB3fWQq8vnwkAS0Ob5m_RM-N2icX9qTsa0s7RMZvCljIMQWhjCGJuHAun-kHz1q3swqgmUH8nZYn171rLNCfrP9anadHQO_W2b-vSM5NRk9MyA.A_3aIJ8YSbH_0QaI.h04kKK4pAkZQS73e_l8lupE6my3Q18fTG3GiG3xqRCVytRxIojtdOoDKujjsjO_lBzhDYHnw_7JVhYZeRRkOYo-bsHviyYo7R9S7UK9lKpM35ooqU63ciEtyM_AY053W2N3mOa_ZIR9nxxKZtorXYA26bnTBVzA6WbOwjd0-sX0BwlsTMvo_G_BORoZ774nZ5IdfVxCmDQBK7TbjZDqY0E5mv5SWKhSrETSl2ojRZtX6gZ3KoysrXuO4mdVA08xlAT9upWCOQqnCjaiM__Zkcl47vLnG0TYlKRazJWfWIuRK1w1PN31d_T90xlTzPgCoCuPSYmfzaceb9TnhEgrCKBdYbm7jG7SF2yHS2nc6WCmkkex_LF1DKfxGDHnJGv7GodNyNpWqBAnaAcD0a2Mpc_2tSh46MLj12fK4D1UnMOPI9URngxPkMYN1avwGky4QVQob4TkC9X38LDfPqC_sW7OJr7R5d0jpZTuzI-LMqpuElDG9mvSnqrZjlYyLxc7rMP1xdsgauKEWKN1vw-wfLKugwheE4z2Qs3mcMTjEaTYDkym8VGr8_G-4nFWdvD8niXhpWhXf2CaQQpAQWHEfsci5-B8TNECi9MJK0u3ndTHJokYHDrqd0OhXdMXLshSUeVr2seHoKx3Ig8NTcjaxPNTCtcMrf4-LxD59XFngegKOov6muc8Dz1q-HXtWyGB4am4YF09G6SFKMnNPzkb5tx1XiFqrp_1zcxKuu60CKS2fDynvNrHIEZJFEy750tiDhnaI9_6KIGiQjmxgL-8tjWTHraSttPtFjxOhSDJeVPKJBxth3HgLqVuclktoA5YN_sXQtHeu8psUkLL3r8PR4ZzZWsCXrd6nQdaOETNZuCjCwzxAI1hMhLvVceydouFg7H-0ozO0MhgryNvU1twAWT8MJZ2sY5pI-QLZ5i9PThLjyCTa3BTSSnlJzqQV6TqLapKF7tfgjbYVESlMQLYqzIwDiR53mSXT73hpihoLKrw6-iv6ybIGimNi_75KPVdtUvAqR-IkbnF5UGPz_zUtrQH4caMThPnaYmn_LWXTezNOFndPDWFq1KQx1miTs5E0notMwjOysFGcNd67ggJfD84KN-ja6lquMAyukYhloczchAW3ZRHzujNtOm_6pCGaZakBiIUCKC_idv5UOPAWN4vo_PLx2yYZuNpM0wDR49D-cxu935jeJ3t5pvGHry44irbuTi7kXwAN5WBkpIsiMVzJwlx_R7UglU1cloT0mSoDzIapzXr2o9GJt2HKspLglOp1QMqXr8zKlbvehEHBHhhu_Vnz8duaEXnwLGrBpuCpGa0BeXrMVfInLQ.3hyvLct_nA9oAxWOeFfunA
+    // http://localhost:3000/?unique_id=user_123
     const params = new URLSearchParams(window.location.search);
     const queryAccessToken = params.get("access_token");
     const queryRefreshToken = params.get("refresh_token");
@@ -244,9 +291,9 @@ const getLocalToken = async (): Promise<Model.Token | undefined> => {
     if (window.location.pathname.startsWith("/trip/") || window.location.pathname.startsWith("/update-trip/")) {
       const paths = window.location.pathname.split("/");
       if (2 < paths.length) {
-        const triphash = paths[2];
+        const triphash = paths[2].split("!");
         try {
-          localToken = await api.lightLoginHash(triphash);
+          localToken = await api.lightLoginHash(triphash[0]);
         } catch (error) {
           console.error("lightLoginHash.error", error);
         }
@@ -289,7 +336,7 @@ export const initial = async (): Promise<boolean> => {
       const apiUrl = yelpConfig.apiUrl;
       const apiKey = yelpConfig.apiKey;
       const sandbox = !yelpConfig.prod;
-      providers.yelpInit(apiUrl, apiKey, sandbox, window.tconfig.REVERSE_PROXY_URL);
+      providers.yelpInit(apiUrl, apiKey, sandbox, window.tconfig.REVERSE_PROXY_URL, langCode);
     }
   }
 
@@ -344,10 +391,46 @@ export const initial = async (): Promise<boolean> => {
     const viConfig = window.tconfig.PROVIDERS.tourAndTicket.find((x) => x.id === Model.PROVIDER_ID.VIATOR);
     // always true
     if (viConfig) {
+      /* const apiUrl = "https://api.viator.com/partner";
+      const apiToken = "ecb944f4-396a-42ec-a89c-3e59ef671465";
+      const sandbox = false; */
       const apiUrl = viConfig.apiUrl;
       const apiToken = viConfig.apiKey;
       const sandbox = !viConfig.prod;
-      providers.viatorInit(apiUrl, apiToken, sandbox, window.tconfig.REVERSE_PROXY_URL);
+      providers.viatorInit(apiUrl, apiToken, sandbox, window.tconfig.REVERSE_PROXY_URL, langCode);
+    }
+  }
+
+  // TourAndTicket Toristy
+  if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.some((x) => x === Model.PROVIDER_ID.TORISTY)) {
+    const toristyConfig = window.tconfig.PROVIDERS.tourAndTicket.find((x) => x.id === Model.PROVIDER_ID.TORISTY);
+    // always true
+    if (toristyConfig) {
+      providers.toristyInit(toristyConfig.apiUrl, toristyConfig.apiKey, window.tconfig.REVERSE_PROXY_URL);
+    }
+  }
+
+  // TourAndTicket Rezdy
+  if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.some((x) => x === Model.PROVIDER_ID.REZDY)) {
+    const rezdyConfig = window.tconfig.PROVIDERS.tourAndTicket.find((x) => x.id === Model.PROVIDER_ID.REZDY);
+    // always true
+    if (rezdyConfig) {
+      providers.rezdyInit(rezdyConfig.apiUrl, rezdyConfig.apiKey, window.tconfig.REVERSE_PROXY_URL);
+    }
+  }
+
+  // Videreo Videos
+  if (window.location.hostname === "trial-dev.tripian.com") {
+    providers.videreoInit("https://videreo.com", window.tconfig.REVERSE_PROXY_URL);
+  }
+
+  // Victory Events
+
+  if (window.tconfig.TOUR_TICKET_PROVIDER_IDS.some((x) => x === Model.PROVIDER_ID.VICTORY)) {
+    const victoryConfig = window.tconfig.PROVIDERS.tourAndTicket.find((x) => x.id === Model.PROVIDER_ID.VICTORY);
+    // always true
+    if (victoryConfig) {
+      providers.victoryInit(victoryConfig.apiUrl, victoryConfig.apiKey, window.tconfig.REVERSE_PROXY_URL);
     }
   }
 

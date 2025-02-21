@@ -1,6 +1,7 @@
 /* eslint-disable react/require-default-props */
 
 import React, { useState } from "react";
+import Model from "@tripian/model";
 import Itineraries from "../../../components/Itineraries/Itineraries";
 import CustomPoiModal from "../../../../../components/CustomPoiModal/CustomPoiModal";
 import classes from "./PlanContainer.module.scss";
@@ -11,10 +12,16 @@ interface IPlanContainer {
   show: boolean;
   alternativesStepId?: number;
   setAlternativesStepId: (stepId?: number) => void;
-
   showExplorePlaces: () => void;
   showLocalExperiences: () => void;
-  selectedPoiCategoryIndex: (index: number) => void;
+  selectedPoiCategoryGroup: (poiCategoryGroup: Model.PoiCategoryGroup) => void;
+  selectedPoiCategoryIds: number[];
+  poiCategoryGroups: Model.PoiCategoryGroup[];
+  gygTourIds: number[];
+  bbTourIds: number[];
+  viatorTourIds: string[];
+  toristyTourIds: string[];
+  toursLoading: boolean;
 }
 
 const PlanContainer: React.FC<IPlanContainer> = ({
@@ -25,7 +32,14 @@ const PlanContainer: React.FC<IPlanContainer> = ({
   setAlternativesStepId,
   showExplorePlaces,
   showLocalExperiences,
-  selectedPoiCategoryIndex,
+  selectedPoiCategoryGroup,
+  selectedPoiCategoryIds,
+  poiCategoryGroups,
+  gygTourIds,
+  bbTourIds,
+  viatorTourIds,
+  toristyTourIds,
+  toursLoading,
 }) => {
   const [showCustomPoiModal, setShowCustomPoiModal] = useState<boolean>(false);
 
@@ -44,9 +58,16 @@ const PlanContainer: React.FC<IPlanContainer> = ({
           planDayIndex={planDayIndex}
           changePlanDayIndex={changePlanDayIndex}
           showExplorePlaces={showExplorePlaces}
-          // showLocalExperiences={showLocalExperiences}
-          selectedPoiCategoryIndex={selectedPoiCategoryIndex}
+          showLocalExperiences={showLocalExperiences}
+          selectedPoiCategoryGroup={selectedPoiCategoryGroup}
           customPoiModalShow={() => setShowCustomPoiModal(!showCustomPoiModal)}
+          poiCategoryGroups={poiCategoryGroups}
+          selectedPoiCategoryIds={selectedPoiCategoryIds}
+          gygTourIds={gygTourIds}
+          bbTourIds={bbTourIds}
+          viatorTourIds={viatorTourIds}
+          toristyTourIds={toristyTourIds}
+          toursLoading={toursLoading}
         />
       </div>
       {/* {tripReference && plan && ( */}

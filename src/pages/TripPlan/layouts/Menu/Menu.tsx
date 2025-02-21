@@ -7,6 +7,7 @@ import { changeDay } from '../../../../redux/action/trip';
  */
 
 import classes from "./Menu.module.scss";
+import useAuth from "../../../../hooks/useAuth";
 // import {
 //   // changeFavoritesVisible,
 //   // changeSearchVisible,
@@ -16,6 +17,7 @@ import classes from "./Menu.module.scss";
 interface IMenu {
   listShown: boolean;
   showList: (event: React.MouseEvent<HTMLInputElement, MouseEvent>) => void;
+  sharedTrip: boolean;
 
   showExplorePlaces: () => void;
   showFavorites: () => void;
@@ -28,33 +30,48 @@ interface IMenu {
   */
 }
 
-const Menu: React.FC<IMenu> = ({ listShown, showList, showExplorePlaces, showFavorites, showOffers, showLocalExperiences }) => (
-  /*   const dayIndex = useSelector((state: ICombinedState) => state.trip.day);  */
+const Menu: React.FC<IMenu> = ({ listShown, showList, showExplorePlaces, showFavorites, showOffers, showLocalExperiences, sharedTrip }) => {
+  const { isLoggedIn } = useAuth();
+  return (
+    /*   const dayIndex = useSelector((state: ICombinedState) => state.trip.day);  */
 
-  <div className={classes.menu}>
-    <div className={`${classes.mitem} ${classes.search}`} onClick={showExplorePlaces} onKeyDown={() => {}} role="button" tabIndex={0}>
-      {" "}
+    <div className={classes.menu}>
+      {sharedTrip && window.tconfig.WIDGET_THEME_1 ? (
+        <>
+          <div className={listShown ? `${classes.circle} ${classes.shadow}` : classes.circle}>
+            <input className={listShown ? classes.mapIcon : classes.listIcon} type="button" onClick={showList} />
+          </div>
+          {isLoggedIn && <div className={`${classes.mitem} ${classes.offers}`} onClick={showOffers} onKeyDown={() => {}} role="button" tabIndex={0} />}
+        </>
+      ) : (
+        <>
+          {" "}
+          <div className={`${classes.mitem} ${classes.search}`} onClick={showExplorePlaces} onKeyDown={() => {}} role="button" tabIndex={0}>
+            {" "}
+          </div>
+          <div className={`${classes.mitem} ${classes.favorites}`} onClick={showFavorites} onKeyDown={() => {}} role="button" tabIndex={0}>
+            {" "}
+          </div>
+          <div className={`${classes.mitem} ${classes.shape}`} />
+          <div className={listShown ? `${classes.circle} ${classes.shadow}` : classes.circle}>
+            <input className={listShown ? classes.mapIcon : classes.listIcon} type="button" onClick={showList} />
+          </div>
+          <div
+            className={`${classes.mitem} ${classes.localExperiences}`}
+            onClick={() => window.tconfig.PROVIDERS.tourAndTicket.length > 0 && showLocalExperiences()}
+            onKeyDown={() => {}}
+            role="button"
+            tabIndex={0}
+          >
+            {" "}
+          </div>
+          <div className={`${classes.mitem} ${classes.offers}`} onClick={showOffers} onKeyDown={() => {}} role="button" tabIndex={0}>
+            {" "}
+          </div>
+        </>
+      )}
     </div>
-    <div className={`${classes.mitem} ${classes.favorites}`} onClick={showFavorites} onKeyDown={() => {}} role="button" tabIndex={0}>
-      {" "}
-    </div>
-    <div className={`${classes.mitem} ${classes.shape}`} />
-    <div className={listShown ? `${classes.circle} ${classes.shadow}` : classes.circle}>
-      <input className={listShown ? classes.mapIcon : classes.listIcon} type="button" onClick={showList} />
-    </div>
-    <div
-      className={`${classes.mitem} ${classes.localExperiences}`}
-      onClick={() => window.tconfig.PROVIDERS.tourAndTicket.length > 0 && showLocalExperiences()}
-      onKeyDown={() => {}}
-      role="button"
-      tabIndex={0}
-    >
-      {" "}
-    </div>
-    <div className={`${classes.mitem} ${classes.offers}`} onClick={showOffers} onKeyDown={() => {}} role="button" tabIndex={0}>
-      {" "}
-    </div>
-  </div>
-);
+  );
+};
 
 export default Menu;

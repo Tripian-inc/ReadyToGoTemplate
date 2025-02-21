@@ -9,10 +9,12 @@ import { PreLoading, CloseIconButton, OfferCard, Button } from "@tripian/react";
 // import IFavoritePoi from "../../../../../models/IFavoritePoi";
 // import { changeFavoritesVisible } from '../../../../../redux/action/layout';
 import useFocus from "../../../../../hooks/useFocus";
+import useAuth from "../../../../../hooks/useAuth";
 import { useHistory } from "react-router";
 import { QR_READER } from "../../../../../constants/ROUTER_PATH_TITLE";
 import useTranslate from "../../../../../hooks/useTranslate";
 import classes from "./SearchOffersContainer.module.scss";
+import moment from "moment";
 
 interface ISearchOffersContainer {
   show: boolean;
@@ -25,6 +27,8 @@ interface ISearchOffersContainer {
   isLoadingOffer: (offerId: number) => boolean;
   offerOptIn: (offerId: number, optInDate: string) => Promise<void>;
   offerOptOut: (offerId: number) => Promise<void>;
+  timezone?: string;
+  setShowLoginModal: (show: boolean) => void;
 }
 
 const SearchOffersContainer: React.FC<ISearchOffersContainer> = ({
@@ -38,12 +42,16 @@ const SearchOffersContainer: React.FC<ISearchOffersContainer> = ({
   isLoadingOffer,
   offerOptIn,
   offerOptOut,
+  timezone,
+  setShowLoginModal,
 }) => {
   const [tab, setTab] = useState<Model.PRODUCT_TYPE_NAME>();
   const currentPlanDate = useMemo(() => (plans && dayIndex < plans.length ? plans[dayIndex].date : undefined), [dayIndex, plans]);
   const [displayOfferPois, setDisplayOfferPois] = useState<Model.Poi[]>();
 
   const { focusPoi } = useFocus();
+
+  const { isLoggedIn } = useAuth();
 
   const { t } = useTranslate();
 
@@ -79,7 +87,7 @@ const SearchOffersContainer: React.FC<ISearchOffersContainer> = ({
     if (loadingSearchOffers) return <PreLoading />;
 
     if (offersResult) {
-      if (offersResult.length === 0)
+      if (displayOfferPois?.every((offerPoi) => offerPoi.offers.every((offer) => myAllOffers?.some((p) => p.offers.some((x) => x.id === offer.id)))))
         return (
           <div className="center">
             <span className={seacrhOfferTextClasses.join(" ")}>{t("trips.myTrips.itinerary.offers.emptyOffersMessage")}</span>
@@ -90,21 +98,37 @@ const SearchOffersContainer: React.FC<ISearchOffersContainer> = ({
         return offerPoi.offers.map((offer: Model.Offer) => {
           if (!myAllOffers?.some((p) => p.offers.some((x) => x.id === offer.id))) {
             return (
-              <div className="my-2">
+              <div className="my-2" key={`search-offer-result-poi-${offer.id}`}>
                 <OfferCard
-                  key={`search-offer-result-poi-${offer.id}`}
                   offer={offer}
                   planDate={currentPlanDate}
                   isMyOffer={false}
                   optedIn={false}
                   isLoadingOffer={isLoadingOffer}
                   optClicked={(optIn: boolean, id: number, optInDate?: string) => {
-                    if (currentPlanDate) {
-                      if (optIn) {
-                        offerOptIn(id, optInDate || currentPlanDate);
-                      } else {
-                        return offerOptOut(id);
+                    console.log("optInDate", optInDate);
+                    console.log("currentPlanDate", currentPlanDate);
+                    if (isLoggedIn) {
+                      if (currentPlanDate && timezone) {
+                        if (optIn) {
+                          const baseDate = moment(optInDate || currentPlanDate);
+                          const currentTime = moment();
+                          const dateTime = baseDate
+                            .set({
+                              hour: currentTime.hour(),
+                              minute: currentTime.minute(),
+                              second: currentTime.second(),
+                            })
+                            .tz(timezone)
+                            .format("YYYY-MM-DD HH:mm:ss");
+
+                          offerOptIn(id, dateTime);
+                        } else {
+                          return offerOptOut(id);
+                        }
                       }
+                    } else {
+                      setShowLoginModal(true);
                     }
                   }}
                   cardClicked={() => focusPoi(offerPoi)}

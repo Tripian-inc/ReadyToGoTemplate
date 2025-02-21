@@ -1,25 +1,34 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import moment from "moment";
 import Model from "@tripian/model";
 import { api } from "@tripian/core";
 import { saveNotification } from "../redux/action/trip";
 import useTrip from "./useTrip";
-import useAuth from "./useAuth";
+import { useParams } from "react-router";
 
 const useSearchOffer = () => {
   const { tripReference } = useTrip();
-  const { isLoggedIn } = useAuth();
 
   const [loadingSearchOffers, setLoadingSearchOffers] = useState<boolean>(false);
   const [offersResult, setOffersResult] = useState<Model.Poi[]>([]);
 
   const dispatch = useDispatch();
 
+  const { hashParam } = useParams<{ hashParam: string }>();
+
+  const shared = useMemo(() => {
+    if (hashParam) {
+      const params = hashParam.split("!");
+      return params.length > 1 && hashParam.split("!")[1] === "s";
+    }
+    return false;
+  }, [hashParam]);
+
   const searchOffer = useCallback(async () => {
     setOffersResult([]);
     setLoadingSearchOffers(true);
-    if (tripReference && isLoggedIn) {
+    if (tripReference?.tripProfile.arrivalDatetime && tripReference.tripProfile.departureDatetime && tripReference.city) {
       const dateFrom = moment(tripReference.tripProfile.arrivalDatetime).format("YYYY-MM-DD"); //  2023-06-01
       const dateTo = moment(tripReference.tripProfile.departureDatetime).format("YYYY-MM-DD"); //  2023-07-01
 
@@ -35,7 +44,7 @@ const useSearchOffer = () => {
       const tripianBounds = parentLocationCity ?? tripReference.city.boundary;
 
       return api
-        .offerSearch(dateFrom, dateTo, tripianBounds.join(","))
+        .offerSearch(dateFrom, dateTo, tripianBounds.join(","), true)
         .then((pois) => {
           setOffersResult(pois);
           return pois;
@@ -51,7 +60,7 @@ const useSearchOffer = () => {
 
     setLoadingSearchOffers(false);
     return [];
-  }, [isLoggedIn, tripReference]);
+  }, [tripReference?.city, tripReference?.tripProfile.arrivalDatetime, tripReference?.tripProfile.departureDatetime]);
 
   const searchOfferCampaign = useCallback(
     async (campaignId: number) => {
@@ -59,9 +68,30 @@ const useSearchOffer = () => {
       setLoadingSearchOffers(true);
 
       return api
-        .offerSearchCampaign(campaignId)
+        .offerSearchCampaign(campaignId, !shared)
         .then((pois) => {
           setOffersResult(pois);
+          return pois;
+        })
+        .catch((searchOfferError) => {
+          dispatch(saveNotification(Model.NOTIFICATION_TYPE.ERROR, "searchOfferCampaign", "Search Campaign Offers", searchOfferError));
+          throw searchOfferError;
+        })
+        .finally(() => {
+          setLoadingSearchOffers(false);
+        });
+    },
+    [dispatch, shared]
+  );
+
+  const myOfferCampaign = useCallback(
+    async (campaignId: number) => {
+      setOffersResult([]);
+      setLoadingSearchOffers(true);
+
+      return api
+        .myCampaignOffers(campaignId)
+        .then((pois) => {
           return pois;
         })
         .catch((searchOfferError) => {
@@ -79,7 +109,7 @@ const useSearchOffer = () => {
     searchOffer();
   }, [searchOffer]);
 
-  return { loadingSearchOffers, offersResult, searchOffer, searchOfferCampaign };
+  return { loadingSearchOffers, offersResult, searchOffer, searchOfferCampaign, myOfferCampaign };
 };
 
 export default useSearchOffer;

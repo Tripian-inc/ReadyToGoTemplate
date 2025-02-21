@@ -41,6 +41,24 @@ export const MY_FEEDBACK: IRouteProps = {
   TITLE: (value) => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + ` ${value}`,
   HEADER: (value) => `${value}`,
 };
+export const FEEDBACK_PAGE: IRouteProps = {
+  PATH: "/feedback",
+  TITLE: (value) => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + ` ${value}`,
+  HEADER: (value) => `${value}`,
+};
+
+export const MY_BOOKINGS_PAGE: IRouteProps = {
+  PATH: "/my-bookings",
+  TITLE: (value) => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + ` ${value}`,
+  HEADER: (value) => `${value}`,
+};
+
+export const CITY_INFO: IRouteProps = {
+  PATH: "/city-info",
+  TITLE: (value) => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + ` ${value}`,
+  HEADER: (value) => `${value}`,
+};
+
 /* export const TOP_TEN: IRouteProps = { PATH: '/top-ten', TITLE: 'Tripian - Top Ten' }; */
 /* export const TOURS: IRouteProps = { PATH: '/tours', TITLE: 'Tripian - Tours' }; */
 export const LOCAL_EXPERIENCES: IRouteProps = { PATH: "/local-experiences", TITLE: (value) => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + ` ${value}` };
@@ -50,7 +68,7 @@ export const TOURS_AND_TICKETS: IRouteProps = {
 };
 export const GYGTOURS: IRouteProps = { PATH: "/gyg", TITLE: () => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + " Get Your Guide" };
 export const PLACE_INFO: IRouteProps = { PATH: "/place", TITLE: (value) => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + ` ${value}` };
-export const TOUR_INFO: IRouteProps = { PATH: "/tour", TITLE: (value) => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + ` ${value}` };
+export const TOUR_INFO: IRouteProps = { PATH: "/product", TITLE: (value) => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + ` ${value}` };
 /* export const CITY: IRouteProps = { PATH: "/city", TITLE: () => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + "Tripian - City Info" }; */
 export const USE_TRIP_URL: IRouteProps = { PATH: "/use-trip-url", TITLE: (value) => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + ` ${value}` };
 export const FORGOT_PASSWORD: IRouteProps = { PATH: "/forgot-password", TITLE: (value) => capitalizeFirstLetter(window.tconfig.BRAND_NAME) + ` ${value}` };

@@ -45,7 +45,8 @@
       background-position: left;
       background-size: contain;
       height: 100%;
-      width: 10rem;
+      width: 6rem;
+      max-width: 7rem;
       display: block !important;
     }
 
@@ -55,7 +56,8 @@
       background-position: left;
       background-size: contain;
       height: 100%;
-      width: 10rem;
+      width: 6rem;
+      max-width: 7rem;
       display: block !important;
     }
 
@@ -113,6 +115,18 @@
 
       .appNavIconImageContainer {
         margin: 2.5rem 0.75rem 0;
+      }
+
+      .logoAppDark {
+        height: 100%;
+        width: 10rem;
+        max-width: 10rem;
+      }
+
+      .logoAppLight {
+        height: 100%;
+        width: 10rem;
+        max-width: 10rem;
       }
     }
   }

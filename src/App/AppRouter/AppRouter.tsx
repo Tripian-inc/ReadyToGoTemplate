@@ -36,6 +36,10 @@ import LocalExperiencesPage from "../../pages/LocalExperiences/LocalExperiences"
 import ToursandTicketsPage from "../../pages/ToursandTickets/ToursandTickets";
 import CampaignOffersPage from "../../pages/CampaignOffers/CampaignOffersPage";
 import DeleteUserPage from "../../pages/DeleteUser/DeleteUserPage";
+import FeedbackPage from "../../pages/FeedbackPage/FeedbackPage";
+import MyBookingsPage from "../../pages/MyBookingsPage/MyBookingsPage";
+import CitySelectPage from "../../pages/CitySelectPage/CitySelectPage";
+import CityInfoPage from "../../pages/CityInfoPage/CityInfoPage";
 
 const AppRouter = () => (
   <Router basename={window.tconfig.DOMAIN_ROUTER_BASE_NAME}>
@@ -68,6 +72,10 @@ const AppRouter = () => (
       <PrivateRoute path={`${ROUTER_PATH_TITLE.OVERVIEW.PATH}/:hash`} exact component={OverviewPage} />
       <PrivateRoute path={`${ROUTER_PATH_TITLE.TRAVEL_COMPANIONS.PATH}`} exact component={TravelCompanions} />
       <PrivateRoute path={`${ROUTER_PATH_TITLE.DELETE_USER.PATH}`} exact component={DeleteUserPage} />
+      <PrivateRoute path={`${ROUTER_PATH_TITLE.FEEDBACK_PAGE.PATH}`} exact component={FeedbackPage} />
+      <PrivateRoute path={`${ROUTER_PATH_TITLE.MY_BOOKINGS_PAGE.PATH}`} exact component={MyBookingsPage} />
+      <PrivateRoute path={`${ROUTER_PATH_TITLE.CITY_INFO.PATH}`} exact component={CitySelectPage} />
+      <PrivateRoute path={`${ROUTER_PATH_TITLE.CITY_INFO.PATH}/:cityId`} exact component={CityInfoPage} />
 
       <Route path={`${ROUTER_PATH_TITLE.PLACE_INFO.PATH}/:id`} component={PlaceInfoPage} />
       <Route path={`${ROUTER_PATH_TITLE.TOUR_INFO.PATH}/:providerId/:id`} component={TourInfoPage} />
